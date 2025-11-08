@@ -1,0 +1,14 @@
+services:
+  mariadb:
+    image: mariadb:11.4
+    container_name: mariadb-pokerly
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: pokerly
+      MYSQL_USER: pokerly
+      MYSQL_PASSWORD: pokerly
+      TZ: Asia/Seoul
+    ports:
+      - '3306:3306'
+    volumes:
+      - ./dbdata:/var/lib/mysql

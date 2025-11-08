@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:mariadb://localhost:3306/pokerly?useUnicode=true&characterEncoding=utf8
+    username: pokerly
+    password: pokerly
+    driver-class-name: org.mariadb.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc.time_zone: Asia/Seoul
+    open-in-view: false
+
+  application:
+    name: pokerly
