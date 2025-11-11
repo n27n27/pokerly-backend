@@ -1,17 +1,26 @@
 package com.rolling.pokerly.core.response;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
-@AllArgsConstructor
 public class ApiResponse<T> {
 
-    private final boolean success;
-    private final T data;
+    private boolean success;
+    private T data;
+    private String error;
 
     public static <T> ApiResponse<T> ok(T data) {
-        return new ApiResponse<>(true, data);
+        var r = new ApiResponse<T>();
+        r.success = true;
+        r.data = data;
+        return r;
+    }
+
+    public static <T> ApiResponse<T> error(String message) {
+        var r = new ApiResponse<T>();
+        r.success = false;
+        r.error = message;
+        return r;
     }
 
 }
