@@ -1,6 +1,8 @@
 package com.rolling.pokerly.security.jwt;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
@@ -79,4 +81,10 @@ public class JwtTokenProvider {
         var principal = new User(nickname, "", authorities);
         return new UsernamePasswordAuthenticationToken(principal, token, authorities);
     }
+
+    public LocalDateTime extractExpiry(String token) {
+        var claims = Jwts.parser().verifyWith(key).build()
+            .parseSignedClaims(token).getPayload();
+    return LocalDateTime.ofInstant(claims.getExpiration().toInstant(), ZoneId.systemDefault());
+}
 }
