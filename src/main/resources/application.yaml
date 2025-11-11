@@ -26,3 +26,8 @@ management:
     web:
       exposure:
         include: health,info
+
+jwt:
+  secret: 'pokerly-example-secret-please-change-to-256-bit-at-least'
+  access-token-validity-seconds: 3600 # 1시간
+  refresh-token-validity-seconds: 1209600 # 14일
