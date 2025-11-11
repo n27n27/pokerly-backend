@@ -3,6 +3,7 @@ package com.rolling.pokerly.user.application;
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.rolling.pokerly.user.domain.RefreshToken;
 import com.rolling.pokerly.user.domain.RefreshTokenRepository;
@@ -15,6 +16,7 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
 
+    @Transactional
     public void save(String nickname, String token, LocalDateTime expiresAt) {
         var existing = refreshTokenRepository.findByNickname(nickname);
         if (existing.isPresent()) {
@@ -32,6 +34,7 @@ public class RefreshTokenService {
         }
     }
 
+    @Transactional(readOnly = true)
     public boolean validate(String nickname, String token) {
         var stored = refreshTokenRepository.findByNickname(nickname)
                 .orElse(null);
@@ -40,6 +43,7 @@ public class RefreshTokenService {
                 && stored.getExpiresAt().isAfter(LocalDateTime.now());
     }
 
+    @Transactional
     public void delete(String nickname) {
         refreshTokenRepository.deleteByNickname(nickname);
     }

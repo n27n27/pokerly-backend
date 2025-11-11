@@ -1,7 +1,9 @@
 package com.rolling.pokerly.user.api;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -71,6 +73,13 @@ public class AuthController {
                 .refreshToken(newRefresh)
                 .user(UserResponse.from(u))
                 .build();
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(Authentication authentication) {
+        var nickname = authentication.getName();   // JWT subject = nickname
+        refreshTokenService.delete(nickname);      // DB에서 리프레시 토큰 제거
+        return ResponseEntity.noContent().build(); // 204
     }
 
 }
