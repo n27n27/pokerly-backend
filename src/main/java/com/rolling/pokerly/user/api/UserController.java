@@ -1,7 +1,7 @@
 package com.rolling.pokerly.user.api;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,9 +26,9 @@ public class UserController {
         return userService.register(request);
     }
 
-    // JWT 붙인 뒤에는 /me 로 대체 예정(현재 임시)
-    @GetMapping("/{nickname}")
-    public UserResponse getByNickname(@PathVariable("nickname") String nickname) {
+    @GetMapping("/me")
+    public UserResponse me(Authentication authentication) {
+        var nickname = authentication.getName(); // 토큰 subject
         var u = userService.loadUser(nickname);
         return UserResponse.from(u);
     }

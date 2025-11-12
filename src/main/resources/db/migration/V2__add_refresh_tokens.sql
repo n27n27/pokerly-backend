@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    nickname VARCHAR(60) NOT NULL,
+    token VARCHAR(500) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_refresh_user UNIQUE (nickname)
+);
