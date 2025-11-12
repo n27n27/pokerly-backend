@@ -85,6 +85,13 @@ public class JwtTokenProvider {
     public LocalDateTime extractExpiry(String token) {
         var claims = Jwts.parser().verifyWith(key).build()
             .parseSignedClaims(token).getPayload();
-    return LocalDateTime.ofInstant(claims.getExpiration().toInstant(), ZoneId.systemDefault());
-}
+        return LocalDateTime.ofInstant(claims.getExpiration().toInstant(), ZoneId.systemDefault());
+    }
+
+    public String extractSubject(String token) {
+        var claims = Jwts.parser().verifyWith(key).build()
+            .parseSignedClaims(token).getPayload();
+        return claims.getSubject();
+    }
+
 }

@@ -23,7 +23,7 @@ public class UserService {
     @Transactional
     public UserResponse register(RegisterRequest req) {
         if (userRepository.existsByNickname(req.getNickname())) {
-            throw new DuplicateNicknameException(req.getNickname());
+            throw new DuplicateNicknameException();
         }
         User user = User.builder()
                 .nickname(req.getNickname())
@@ -38,7 +38,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public User loadUser(String nickname) {
         return userRepository.findByNickname(nickname)
-                .orElseThrow(() -> new UserNotFoundException(nickname));
+                .orElseThrow(() -> new UserNotFoundException());
     }
 
 }

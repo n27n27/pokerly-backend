@@ -1,5 +1,6 @@
 package com.rolling.pokerly.user.api;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,6 +18,7 @@ import com.rolling.pokerly.user.dto.AuthResponse;
 import com.rolling.pokerly.user.dto.LoginRequest;
 import com.rolling.pokerly.user.dto.RefreshRequest;
 import com.rolling.pokerly.user.dto.UserResponse;
+import com.rolling.pokerly.user.exception.InvalidRefreshTokenException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -55,9 +57,16 @@ public class AuthController {
     // 아주 단순한 리프레시 예시 (실서비스에선 Refresh 저장/블랙리스트 고려)
     @PostMapping("/refresh")
     public AuthResponse refresh(@RequestBody RefreshRequest req) {
-        // 1) 저장된 refresh와 일치 & 미만료 확인
+
+        // 1) 토큰–닉네임 일치성(토큰 subject) 체크 -> 탈취/오용 최소화
+        var tokenNickname = tokenProvider.extractSubject(req.getRefreshToken());
+        if (!tokenNickname.equals(req.getNickname())) {
+            throw new InvalidRefreshTokenException();
+        }
+        // 2) 저장된 refresh와 일치 & 미만료 확인
         if (!refreshTokenService.validate(req.getNickname(), req.getRefreshToken())) {
-            throw new ApiException("Invalid or expired refresh token");
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_REFRESH",
+                "유효하지 않거나 만료된 리프레시 토큰입니다.");
         }
 
         var u = userService.loadUser(req.getNickname());
