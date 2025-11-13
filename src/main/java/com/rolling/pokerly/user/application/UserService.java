@@ -5,11 +5,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.rolling.pokerly.user.domain.User;
-import com.rolling.pokerly.user.domain.UserRepository;
 import com.rolling.pokerly.user.dto.RegisterRequest;
 import com.rolling.pokerly.user.dto.UserResponse;
 import com.rolling.pokerly.user.exception.DuplicateNicknameException;
 import com.rolling.pokerly.user.exception.UserNotFoundException;
+import com.rolling.pokerly.user.repo.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 

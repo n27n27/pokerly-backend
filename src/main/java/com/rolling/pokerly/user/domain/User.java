@@ -22,7 +22,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long Id;
 
     private String nickname;
     private String password;
@@ -31,6 +31,7 @@ public class User {
     private LocalDateTime createdAt;
 
     @PrePersist
+    @SuppressWarnings("unused")
     void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
     }

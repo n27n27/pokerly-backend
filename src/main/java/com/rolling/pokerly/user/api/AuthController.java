@@ -39,7 +39,7 @@ public class AuthController {
         authenticationManager.authenticate(token);
 
         var u = userService.loadUser(request.getNickname());
-        var access = tokenProvider.createAccessToken(u.getNickname(), u.getRole());
+        var access = tokenProvider.createAccessToken(u.getId(), u.getNickname(), u.getRole());
         var refresh = tokenProvider.createRefreshToken(u.getNickname());
         var refreshExp = tokenProvider.extractExpiry(refresh);
 
@@ -71,7 +71,7 @@ public class AuthController {
 
         var u = userService.loadUser(req.getNickname());
 
-        var newAccess = tokenProvider.createAccessToken(u.getNickname(), u.getRole());
+        var newAccess = tokenProvider.createAccessToken(u.getId(), u.getNickname(), u.getRole());
         var newRefresh = tokenProvider.createRefreshToken(u.getNickname());
 
         var exp = tokenProvider.extractExpiry(newRefresh);

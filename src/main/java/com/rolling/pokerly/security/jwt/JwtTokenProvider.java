@@ -13,7 +13,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.JwtException;
@@ -41,11 +40,12 @@ public class JwtTokenProvider {
         key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String createAccessToken(String nickname, String role) {
+    public String createAccessToken(Long userId, String nickname, String role) {
         var now = new Date();
         var expiry = new Date(now.getTime() + accessValiditySec * 1000);
         return Jwts.builder()
                 .subject(nickname)
+                .claim("userId", userId)
                 .claim("role", role)
                 .issuedAt(now)
                 .expiration(expiry)
@@ -75,10 +75,11 @@ public class JwtTokenProvider {
 
     public Authentication getAuthentication(String token) {
         var claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+        var userId = claims.get("userId", Long.class);
         var nickname = claims.getSubject();
         var role = (String) claims.get("role");
         var authorities = List.<GrantedAuthority>of(new SimpleGrantedAuthority("ROLE_" + role));
-        var principal = new User(nickname, "", authorities);
+        var principal = new CustomPrincipal(userId, nickname, authorities);
         return new UsernamePasswordAuthenticationToken(principal, token, authorities);
     }
 

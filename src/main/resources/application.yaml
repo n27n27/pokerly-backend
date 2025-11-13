@@ -39,3 +39,4 @@ logging:
     org.hibernate.SQL: DEBUG # Hibernate가 실행하는 SQL
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE # 바인딩 파라미터 로그
     com.rolling.pokerly: DEBUG # 우리 애플리케이션 패키지
+    org.springframework.boot.autoconfigure: INFO

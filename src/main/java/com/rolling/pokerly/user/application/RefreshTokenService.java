@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.rolling.pokerly.user.domain.RefreshToken;
-import com.rolling.pokerly.user.domain.RefreshTokenRepository;
+import com.rolling.pokerly.user.repo.RefreshTokenRepository;
 
 import lombok.RequiredArgsConstructor;
 
