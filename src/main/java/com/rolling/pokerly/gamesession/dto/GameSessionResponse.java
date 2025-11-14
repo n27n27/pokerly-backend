@@ -1,27 +1,58 @@
 package com.rolling.pokerly.gamesession.dto;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
+import com.rolling.pokerly.gamesession.domain.GameSession;
+
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-@Data
+@Getter
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class GameSessionResponse {
+
     private Long id;
     private Long venueId;
     private LocalDate playDate;
     private String title;
     private String gameType;
-    private BigDecimal buyIn;
+
+    private Long totalCashIn;
+    private Long totalPointIn;
     private Integer entries;
-    private BigDecimal cashOut;
-    private BigDecimal pointUsed;
-    private BigDecimal pointRemainAfter;
-    private BigDecimal discount;
+
+    private Long cashOut;
+    private Long discount;
     private String notes;
 
-    private BigDecimal profitCashRealized;
-    private BigDecimal profitIncludingPoints;
+    private Long profitCashRealized;
+    private Long profitIncludingPoints;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    public static GameSessionResponse from(GameSession s) {
+        return GameSessionResponse.builder()
+                .id(s.getId())
+                .venueId(s.getVenueId())
+                .playDate(s.getPlayDate())
+                .title(s.getTitle())
+                .gameType(s.getGameType())
+                .totalCashIn(s.getTotalCashIn())
+                .totalPointIn(s.getTotalPointIn())
+                .entries(s.getEntries())
+                .cashOut(s.getCashOut())
+                .discount(s.getDiscount())
+                .notes(s.getNotes())
+                .profitCashRealized(s.getProfitCashRealized())
+                .profitIncludingPoints(s.getProfitIncludingPoints())
+                .createdAt(s.getCreatedAt())
+                .updatedAt(s.getUpdatedAt())
+                .build();
+    }
 }

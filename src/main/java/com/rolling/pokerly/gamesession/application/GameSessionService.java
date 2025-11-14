@@ -1,172 +1,113 @@
 package com.rolling.pokerly.gamesession.application;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.rolling.pokerly.core.exception.ApiException;
 import com.rolling.pokerly.gamesession.domain.GameSession;
 import com.rolling.pokerly.gamesession.dto.GameSessionRequest;
 import com.rolling.pokerly.gamesession.dto.GameSessionResponse;
-import com.rolling.pokerly.gamesession.dto.MonthSummaryResponse;
 import com.rolling.pokerly.gamesession.repo.GameSessionRepository;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class GameSessionService {
 
-    private final GameSessionRepository repo;
+    private final GameSessionRepository gameSessionRepository;
 
-    private static BigDecimal nz(BigDecimal v) {
-        return v == null ? BigDecimal.ZERO : v;
+    public List<GameSessionResponse> getMonthlySessions(Long userId, int year, int month, Long venueId) {
+        var ym = YearMonth.of(year, month);
+        LocalDate from = ym.atDay(1);
+        LocalDate to = ym.atEndOfMonth();
+        var sessions = (venueId == null)
+            ? gameSessionRepository.findByUserIdAndPlayDateBetweenOrderByPlayDateAsc(userId, from, to)
+            : gameSessionRepository.findByUserIdAndVenueIdAndPlayDateBetweenOrderByPlayDateAsc(
+                    userId, venueId, from, to);
+        return sessions.stream()
+                .map(GameSessionResponse::from)
+                .toList();
     }
 
-    private static int nz(Integer v, int defaultValue) {
-        return v == null ? defaultValue : v;
+    public GameSessionResponse getOne(Long userId, Long sessionId) {
+        var s = gameSessionRepository.findByIdAndUserId(sessionId, userId)
+                .orElseThrow(() ->
+                        new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "게임 세션을 찾을 수 없습니다."));
+        return GameSessionResponse.from(s);
     }
 
-    private static void computeDerived(GameSession e) {
-        BigDecimal totalBuy = nz(e.getBuyIn())
-        .multiply(BigDecimal.valueOf(Optional.ofNullable(e.getEntries()).orElse(1)));
-
-        BigDecimal discount = nz(e.getDiscount());
-        BigDecimal cashCost = totalBuy.subtract(discount);
-        BigDecimal totalCost = totalBuy.add(nz(e.getPointUsed())).subtract(discount);
-
-        e.setProfitCashRealized(nz(e.getCashOut()).subtract(cashCost));
-        e.setProfitIncludingPoints(nz(e.getCashOut()).subtract(totalCost));
-    }
-
-    private static GameSessionResponse toDto(GameSession e) {
-        return GameSessionResponse.builder()
-                .id(e.getId())
-                .venueId(e.getVenueId())
-                .playDate(e.getPlayDate())
-                .title(e.getTitle())
-                .gameType(e.getGameType())
-                .buyIn(e.getBuyIn())
-                .entries(e.getEntries())
-                .cashOut(e.getCashOut())
-                .pointUsed(e.getPointUsed())
-                .pointRemainAfter(e.getPointRemainAfter())
-                .discount(e.getDiscount())
-                .notes(e.getNotes())
-                .profitCashRealized(e.getProfitCashRealized())
-                .profitIncludingPoints(e.getProfitIncludingPoints())
-                .build();
-    }
-
+    @Transactional
     public GameSessionResponse create(Long userId, GameSessionRequest req) {
-        GameSession e = GameSession.builder()
-                    .userId(userId)
-                    .venueId(req.getVenueId())
-                    .playDate(Optional.ofNullable(req.getPlayDate()).orElse(LocalDate.now()))
-                    .title(req.getTitle())
-                    .gameType(req.getGameType())
-                    .buyIn(nz(req.getBuyIn()))
-                    .entries(nz(req.getEntries(), 1))
-                    .cashOut(nz(req.getCashOut()))
-                    .pointUsed(nz(req.getPointUsed()))
-                    .pointRemainAfter(nz(req.getPointRemainAfter()))
-                    .discount(nz(req.getDiscount()))
-                    .notes(req.getNotes())
-                    .build();
+        // 기본값 방어
+        var entries        = Objects.requireNonNullElse(req.getEntries(), 1);
+        var totalCashIn    = Objects.requireNonNullElse(req.getTotalCashIn(), 0L);
+        var totalPointIn   = Objects.requireNonNullElse(req.getTotalPointIn(), 0L);
+        var cashOut        = Objects.requireNonNullElse(req.getCashOut(), 0L);
+        var discount       = Objects.requireNonNullElse(req.getDiscount(), 0L);
 
-
-        computeDerived(e);
-        repo.save(e);
-        return toDto(e);
-    }
-
-    public GameSessionResponse update(Long userId, Long id, GameSessionRequest req) {
-        GameSession e = repo.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "해당 게임이 없습니다."));
-        if (!e.getUserId().equals(userId)) throw new SecurityException("Forbidden");
-
-        e.setVenueId(req.getVenueId());
-        e.setPlayDate(req.getPlayDate());
-        e.setTitle(req.getTitle());
-        e.setGameType(req.getGameType());
-        e.setBuyIn(nz(req.getBuyIn()));
-        e.setEntries(req.getEntries());
-        e.setCashOut(nz(req.getCashOut()));
-        e.setPointUsed(nz(req.getPointUsed()));
-        e.setPointRemainAfter(nz(req.getPointRemainAfter()));
-        e.setDiscount(nz(req.getDiscount()));
-        e.setNotes(req.getNotes());
-
-        computeDerived(e);
-        repo.save(e);
-        return toDto(e);
-    }
-
-    public void delete(Long userId, Long id) {
-        GameSession e = repo.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "해당 게임이 없습니다."));
-
-        if (!e.getUserId().equals(userId)) throw new SecurityException("Forbidden");
-        repo.delete(e);
-    }
-
-    public GameSessionResponse get(Long userId, Long id) {
-        GameSession e = repo.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "해당 게임이 없습니다."));
-        if (!e.getUserId().equals(userId)) throw new SecurityException("Forbidden");
-        return toDto(e);
-    }
-
-    public List<GameSessionResponse> listByMonth(Long userId, YearMonth ym, Long venueId) {
-        LocalDate from = ym.atDay(1);
-        LocalDate to = ym.atEndOfMonth();
-
-        return repo.findByUserIdAndPlayDateBetween(userId, from, to).stream()
-                .filter(e -> venueId == null || e.getVenueId().equals(venueId))
-                .sorted((a, b) -> b.getPlayDate().compareTo(a.getPlayDate()))  // 최신순
-                .map(GameSessionService::toDto)
-                .collect(Collectors.toList());
-    }
-
-    public MonthSummaryResponse summaryByMonth(Long userId, YearMonth ym, Long venueId) {
-        LocalDate from = ym.atDay(1);
-        LocalDate to = ym.atEndOfMonth();
-
-        List<GameSession> list = repo.findByUserIdAndPlayDateBetween(userId, from, to).stream()
-                .filter(e -> venueId == null || e.getVenueId().equals(venueId))
-                .collect(Collectors.toList());
-
-        BigDecimal totalBuy = BigDecimal.ZERO;
-        BigDecimal totalDiscount = BigDecimal.ZERO;
-        BigDecimal totalCashOut = BigDecimal.ZERO;
-        BigDecimal totalPointUsed = BigDecimal.ZERO;
-        BigDecimal profitCash = BigDecimal.ZERO;
-        BigDecimal profitIncl = BigDecimal.ZERO;
-
-        for (GameSession e : list) {
-            BigDecimal buy = nz(e.getBuyIn()).multiply(BigDecimal.valueOf(Optional.ofNullable(e.getEntries()).orElse(0)));
-
-            totalBuy = totalBuy.add(buy);
-            totalDiscount = totalDiscount.add(nz(e.getDiscount()));
-            totalCashOut = totalCashOut.add(nz(e.getCashOut()));
-            totalPointUsed = totalPointUsed.add(nz(e.getPointUsed()));
-            profitCash = profitCash.add(nz(e.getProfitCashRealized()));
-            profitIncl = profitIncl.add(nz(e.getProfitIncludingPoints()));
-        }
-
-        return MonthSummaryResponse.builder()
-                .year(ym.getYear())
-                .month(ym.getMonthValue())
-                .count(list.size())
-                .totalBuyIn(totalBuy.subtract(totalDiscount))
-                .totalDiscount(totalDiscount)
-                .totalCashOut(totalCashOut)
-                .totalPointUsed(totalPointUsed)
-                .profitCashRealized(profitCash)
-                .profitIncludingPoints(profitIncl)
+        var session = GameSession.builder()
+                .userId(userId)
+                .venueId(req.getVenueId())
+                .playDate(req.getPlayDate())
+                .title(req.getTitle())
+                .gameType(req.getGameType())
+                .totalCashIn(totalCashIn)
+                .totalPointIn(totalPointIn)
+                .entries(entries)
+                .cashOut(cashOut)
+                .discount(discount)
+                .notes(req.getNotes())
+                // profit / createdAt / updatedAt 은 @PrePersist에서 계산
                 .build();
+
+        var saved = gameSessionRepository.save(session);
+        return GameSessionResponse.from(saved);
     }
+
+    @Transactional
+    public GameSessionResponse update(Long userId, Long sessionId, GameSessionRequest req) {
+        var s = gameSessionRepository.findByIdAndUserId(sessionId, userId)
+                .orElseThrow(() ->
+                        new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "게임 세션을 찾을 수 없습니다."));
+
+        var entries        = Objects.requireNonNullElse(req.getEntries(), 1);
+        var totalCashIn    = Objects.requireNonNullElse(req.getTotalCashIn(), 0L);
+        var totalPointIn   = Objects.requireNonNullElse(req.getTotalPointIn(), 0L);
+        var cashOut        = Objects.requireNonNullElse(req.getCashOut(), 0L);
+        var discount       = Objects.requireNonNullElse(req.getDiscount(), 0L);
+
+        s.update(
+                req.getPlayDate(),
+                req.getVenueId(),
+                req.getTitle(),
+                req.getGameType(),
+                totalCashIn,
+                totalPointIn,
+                entries,
+                cashOut,
+                discount,
+                req.getNotes()
+        );
+        // @PreUpdate 에서 profit/updatedAt 자동 계산
+
+        return GameSessionResponse.from(s);
+    }
+
+    @Transactional
+    public void delete(Long userId, Long sessionId) {
+        var s = gameSessionRepository.findByIdAndUserId(sessionId, userId)
+                .orElseThrow(() ->
+                        new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "게임 세션을 찾을 수 없습니다."));
+
+        gameSessionRepository.delete(s);
+    }
+
 }

@@ -1,21 +1,25 @@
 package com.rolling.pokerly.gamesession.dto;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class GameSessionRequest {
+
     private Long venueId;
     private LocalDate playDate;
     private String title;
     private String gameType;
-    private BigDecimal buyIn;
+
+    private Long totalCashIn;
+    private Long totalPointIn;
     private Integer entries;
-    private BigDecimal cashOut;
-    private BigDecimal pointUsed;
-    private BigDecimal pointRemainAfter;
-    private BigDecimal discount;
+
+    private Long cashOut;
+    private Long discount;
+
     private String notes;
 }

@@ -1,8 +1,8 @@
 package com.rolling.pokerly.gamesession.api;
 
-import java.time.YearMonth;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,70 +12,80 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.rolling.pokerly.core.response.ApiResponse;
 import com.rolling.pokerly.gamesession.application.GameSessionService;
 import com.rolling.pokerly.gamesession.dto.GameSessionRequest;
 import com.rolling.pokerly.gamesession.dto.GameSessionResponse;
-import com.rolling.pokerly.gamesession.dto.MonthSummaryResponse;
 import com.rolling.pokerly.security.jwt.CustomPrincipal;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/game-sessions")
 @RequiredArgsConstructor
-@Slf4j
 public class GameSessionController {
 
-    private final GameSessionService service;
+    private final GameSessionService gameSessionService;
 
-    private Long userId(Authentication auth) {
-        CustomPrincipal p = (CustomPrincipal) auth.getPrincipal();
-        return p.getUserId();
-    }
-
-    @PostMapping
-    public ApiResponse<GameSessionResponse> create(Authentication auth, @RequestBody GameSessionRequest req) {
-        var result = service.create(userId(auth), req);
-        return ApiResponse.ok(result);
-    }
-
-    @PutMapping("/{id}")
-    public ApiResponse<GameSessionResponse> update(Authentication auth, @PathVariable("id") Long id, @RequestBody GameSessionRequest req) {
-        var result = service.update(userId(auth), id, req);
-        return ApiResponse.ok(result);
-    }
-
-    @DeleteMapping("/{id}")
-    public ApiResponse<String> delete(Authentication auth, @PathVariable("id") Long id) {
-        service.delete(userId(auth), id);
-        return ApiResponse.ok("delete");
+    @GetMapping
+    public ApiResponse<List<GameSessionResponse>> getMonthlySessions(
+            Authentication auth,
+            @RequestParam("year") int year,
+            @RequestParam("month") int month,
+            @RequestParam(name = "venueId", required = false) Long venueId
+    ) {
+        Long userId = extractUserId(auth);
+        var list = gameSessionService.getMonthlySessions(userId, year, month, venueId);
+        return ApiResponse.ok(list);
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<GameSessionResponse> get(Authentication auth, @PathVariable("id") Long id) {
-        var result = service.get(userId(auth), id);
-        return ApiResponse.ok(result);
+    public ApiResponse<GameSessionResponse> getOne(
+            Authentication auth,
+            @PathVariable("id") Long id
+    ) {
+        Long userId = extractUserId(auth);
+        var res = gameSessionService.getOne(userId, id);
+        return ApiResponse.ok(res);
     }
 
-    @GetMapping
-    public ApiResponse<List<GameSessionResponse>> list(Authentication auth,
-                                          @RequestParam("year") int year,
-                                          @RequestParam("month") int month,
-                                          @RequestParam(name = "venueId", required = false) Long venueId) {
-        var result = service.listByMonth(userId(auth), YearMonth.of(year, month), venueId);
-        return ApiResponse.ok(result);
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<GameSessionResponse> create(
+            Authentication auth,
+            @RequestBody GameSessionRequest req
+    ) {
+        Long userId = extractUserId(auth);
+        var created = gameSessionService.create(userId, req);
+        return ApiResponse.ok(created);
     }
 
-    @GetMapping("/summary")
-    public ApiResponse<MonthSummaryResponse> summary(Authentication auth,
-                                        @RequestParam("year") int year,
-                                        @RequestParam("month") int month,
-                                        @RequestParam(name = "venueId", required = false) Long venueId) {
-        var result = service.summaryByMonth(userId(auth), YearMonth.of(year, month), venueId);
-        return ApiResponse.ok(result);
+    @PutMapping("/{id}")
+    public ApiResponse<GameSessionResponse> update(
+            Authentication auth,
+            @PathVariable("id") Long id,
+            @RequestBody GameSessionRequest req
+    ) {
+        Long userId = extractUserId(auth);
+        var updated = gameSessionService.update(userId, id, req);
+        return ApiResponse.ok(updated);
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(
+            Authentication auth,
+            @PathVariable("id") Long id
+    ) {
+        Long userId = extractUserId(auth);
+        gameSessionService.delete(userId, id);
+        return ApiResponse.ok(null);
+    }
+
+    private Long extractUserId(Authentication auth) {
+        CustomPrincipal p = (CustomPrincipal) auth.getPrincipal();
+        return p.getUserId();
     }
 }
