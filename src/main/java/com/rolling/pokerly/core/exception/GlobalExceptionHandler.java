@@ -9,6 +9,7 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -106,8 +107,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponse<?>> methodNotAllowed(HttpRequestMethodNotSupportedException ex,
                                                          HttpServletRequest req) {
-        var err = body(req, HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED", "요청 메서드가 지원되지 않습니다. 지원: ", null);
+        var err = body(req, HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED", "요청 메서드가 지원되지 않습니다.", null);
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(ApiResponse.fail(err));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<?>> handleBodyMissing(HttpMessageNotReadableException ex, HttpServletRequest req) {
+
+        var err = body(req, HttpStatus.BAD_REQUEST, "BAD_REQUEST", "잘못된 요청입니다.", null);
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(ApiResponse.fail(err));
+
     }
 
 }
