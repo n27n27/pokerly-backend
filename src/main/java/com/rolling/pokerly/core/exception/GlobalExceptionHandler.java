@@ -15,6 +15,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -115,8 +116,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<?>> handleBodyMissing(HttpMessageNotReadableException ex, HttpServletRequest req) {
 
         var err = body(req, HttpStatus.BAD_REQUEST, "BAD_REQUEST", "잘못된 요청입니다.", null);
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(ApiResponse.fail(err));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.fail(err));
 
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<?>> noResource(NoResourceFoundException ex, HttpServletRequest req) {
+        var err = body(req, HttpStatus.NOT_FOUND, "NOT_FOUND", "요청하신 API를 찾을 수 없습니다.", null);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.fail(err));
     }
 
 }

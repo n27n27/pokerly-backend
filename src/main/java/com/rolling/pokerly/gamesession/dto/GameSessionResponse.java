@@ -28,6 +28,7 @@ public class GameSessionResponse {
 
     private Long cashOut;
     private Long discount;
+    private Long earnedPoint;
     private String notes;
 
     private Long profitCashRealized;
@@ -48,6 +49,7 @@ public class GameSessionResponse {
                 .entries(s.getEntries())
                 .cashOut(s.getCashOut())
                 .discount(s.getDiscount())
+                .earnedPoint(s.getEarnedPoint())
                 .notes(s.getNotes())
                 .profitCashRealized(s.getProfitCashRealized())
                 .profitIncludingPoints(s.getProfitIncludingPoints())

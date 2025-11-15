@@ -20,6 +20,7 @@ public class GameSessionRequest {
 
     private Long cashOut;
     private Long discount;
+    private Long earnedPoint;
 
     private String notes;
 }

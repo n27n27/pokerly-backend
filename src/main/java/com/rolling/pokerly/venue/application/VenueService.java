@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.rolling.pokerly.core.exception.ApiException;
+import com.rolling.pokerly.gamesession.repo.GameSessionRepository;
+import com.rolling.pokerly.point.repo.PointTransactionRepository;
 import com.rolling.pokerly.venue.domain.Venue;
 import com.rolling.pokerly.venue.dto.VenueRequest;
 import com.rolling.pokerly.venue.dto.VenueResponse;
@@ -20,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 public class VenueService {
 
     private final VenueRepository venueRepository;
+    private final GameSessionRepository gameSessionRepository;
+    private final PointTransactionRepository pointTransactionRepository;
 
     public List<VenueResponse> getMyVenues(Long userId) {
         return venueRepository.findByUserIdOrderByNameAsc(userId).stream()
@@ -64,21 +68,21 @@ public class VenueService {
     public void delete(Long userId, Long venueId) {
         var venue = venueRepository.findByIdAndUserId(venueId, userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "매장을 찾을 수 없습니다."));
-        //todo
+
         // 1) 해당 매장에 연결된 게임 세션 존재 여부
-        // boolean hasGameSessions = gameSessionRepository.existsByUserIdAndVenueId(userId, venueId);
+        boolean hasGameSessions = gameSessionRepository.existsByUserIdAndVenueId(userId, venueId);
 
         // 2) 해당 매장에 연결된 포인트 트랜잭션 존재 여부
-        // boolean hasPointTransactions = pointTransactionRepository.existsByUserIdAndVenueId(userId, venueId);
+        boolean hasPointTransactions = pointTransactionRepository.existsByUserIdAndVenueId(userId, venueId);
 
-        // if (hasGameSessions || hasPointTransactions) {
-        //     // 이미 정의해둔 전역 예외 형태에 맞춰서 코드/메시지 설정
-        //     throw new ApiException(
-        //             HttpStatus.CONFLICT,
-        //             "VENUE_HAS_HISTORY",
-        //             "해당 매장에 등록된 게임/포인트 이력이 있어 삭제할 수 없습니다."
-        //     );
-        // }
+        if (hasGameSessions || hasPointTransactions) {
+            // 이미 정의해둔 전역 예외 형태에 맞춰서 코드/메시지 설정
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "VENUE_HAS_HISTORY",
+                    "해당 매장에 등록된 게임/포인트 이력이 있어 삭제할 수 없습니다."
+            );
+        }
 
         venueRepository.delete(venue);
     }

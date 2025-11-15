@@ -55,12 +55,17 @@ public class GameSession {
     @Column(name = "discount", nullable = false)
     private Long discount;
 
+    @Column(name = "earned_point", nullable = false)
+    private Long earnedPoint;   // 세션 중 적립된 포인트(현금 가치 기준)
+
     @Column(length = 1000)
     private String notes;
 
+    // 현금 기준 손익: cash_out - (total_cash_in - discount)
     @Column(name = "profit_cash_realized", nullable = false)
     private Long profitCashRealized;
 
+    // EV 기준 손익(현금 + 포인트): profit_cash_realized + earned_point
     @Column(name = "profit_including_points", nullable = false)
     private Long profitIncludingPoints;
 
@@ -83,6 +88,7 @@ public class GameSession {
             Integer entries,
             Long cashOut,
             Long discount,
+            Long earnedPoint,
             String notes,
             Long profitCashRealized,
             Long profitIncludingPoints,
@@ -100,6 +106,7 @@ public class GameSession {
         this.entries = entries;
         this.cashOut = cashOut;
         this.discount = discount;
+        this.earnedPoint = earnedPoint;
         this.notes = notes;
         this.profitCashRealized = profitCashRealized;
         this.profitIncludingPoints = profitIncludingPoints;
@@ -124,19 +131,23 @@ public class GameSession {
     }
 
     /**
-     * 할인 로직에 대한 기본 가정:
-     * - total_cash_in / total_point_in : "표면상 바인 총액"
-     * - discount : 그 중 실제로 깎인 금액 (현금 기준으로 가정)
+     * EV/Profit 정의 :
      *
-     * EV(포인트 포함) = cash_out - (total_cash_in + total_point_in - discount)
-     * 현금 기준 손익 = cash_out - (total_cash_in - discount)
+     * - 포인트를 받는 것이 위닝/EV의 핵심
+     * - 포인트 사용(point_in)은 과거에 얻은 자산을 사용하는 것일 뿐,
+     *   오늘 세션의 profit 자체가 아님 → EV 계산에서는 제외
+     * - 캐시아웃은 현금 흐름
+     *
+     * 현금 기준 손익:
+     *   profitCashRealized = cash_out - (total_cash_in - discount)
+     *
+     * EV 기준 손익(현금 + 포인트):
+     *   profitIncludingPoints = profitCashRealized + earned_point
      */
     private void recalcProfit() {
-        long effectiveTotalIn = (totalCashIn + totalPointIn) - discount;
-        this.profitIncludingPoints = cashOut - effectiveTotalIn;
-
-        long effectiveCashIn = totalCashIn - discount; // 할인은 현금에 먼저 적용된다고 가정
+        long effectiveCashIn = totalCashIn - discount;
         this.profitCashRealized = cashOut - effectiveCashIn;
+        this.profitIncludingPoints = this.profitCashRealized + earnedPoint;
     }
 
     public void update(
@@ -149,6 +160,7 @@ public class GameSession {
             Integer entries,
             Long cashOut,
             Long discount,
+            Long earnedPoint,
             String notes
     ) {
         this.playDate = playDate;
@@ -160,6 +172,7 @@ public class GameSession {
         this.entries = entries;
         this.cashOut = cashOut;
         this.discount = discount;
+        this.earnedPoint = earnedPoint;
         this.notes = notes;
     }
 }

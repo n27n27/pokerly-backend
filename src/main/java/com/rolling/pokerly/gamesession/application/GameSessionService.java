@@ -14,6 +14,7 @@ import com.rolling.pokerly.gamesession.domain.GameSession;
 import com.rolling.pokerly.gamesession.dto.GameSessionRequest;
 import com.rolling.pokerly.gamesession.dto.GameSessionResponse;
 import com.rolling.pokerly.gamesession.repo.GameSessionRepository;
+import com.rolling.pokerly.point.application.PointService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class GameSessionService {
 
     private final GameSessionRepository gameSessionRepository;
+    private final PointService pointService;
 
     public List<GameSessionResponse> getMonthlySessions(Long userId, int year, int month, Long venueId) {
         var ym = YearMonth.of(year, month);
@@ -52,6 +54,7 @@ public class GameSessionService {
         var totalPointIn   = Objects.requireNonNullElse(req.getTotalPointIn(), 0L);
         var cashOut        = Objects.requireNonNullElse(req.getCashOut(), 0L);
         var discount       = Objects.requireNonNullElse(req.getDiscount(), 0L);
+        var earnedPoint    = Objects.requireNonNullElse(req.getEarnedPoint(), 0L);
 
         var session = GameSession.builder()
                 .userId(userId)
@@ -64,11 +67,16 @@ public class GameSessionService {
                 .entries(entries)
                 .cashOut(cashOut)
                 .discount(discount)
+                .earnedPoint(earnedPoint)
                 .notes(req.getNotes())
                 // profit / createdAt / updatedAt 은 @PrePersist에서 계산
                 .build();
 
         var saved = gameSessionRepository.save(session);
+
+        if (earnedPoint > 0) {
+            pointService.earnFromSession(userId, saved.getVenueId(), saved.getId(), earnedPoint);
+        }
         return GameSessionResponse.from(saved);
     }
 
@@ -83,6 +91,9 @@ public class GameSessionService {
         var totalPointIn   = Objects.requireNonNullElse(req.getTotalPointIn(), 0L);
         var cashOut        = Objects.requireNonNullElse(req.getCashOut(), 0L);
         var discount       = Objects.requireNonNullElse(req.getDiscount(), 0L);
+        var earnedPoint    = Objects.requireNonNullElse(req.getEarnedPoint(), 0L);
+
+        var previousEarned = s.getEarnedPoint();
 
         s.update(
                 req.getPlayDate(),
@@ -94,9 +105,14 @@ public class GameSessionService {
                 entries,
                 cashOut,
                 discount,
+                earnedPoint,
                 req.getNotes()
         );
         // @PreUpdate 에서 profit/updatedAt 자동 계산
+        long diff = earnedPoint - previousEarned;
+        if (diff != 0L) {
+            pointService.adjustSessionEarnedPoint(userId, s.getVenueId(), s.getId(), diff);
+        }
 
         return GameSessionResponse.from(s);
     }
@@ -106,6 +122,11 @@ public class GameSessionService {
         var s = gameSessionRepository.findByIdAndUserId(sessionId, userId)
                 .orElseThrow(() ->
                         new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "게임 세션을 찾을 수 없습니다."));
+
+        var earned = s.getEarnedPoint();
+        if (earned != null && earned > 0L) {
+            pointService.rollbackSessionEarnedPoint(userId, s.getVenueId(), s.getId(), earned);
+        }
 
         gameSessionRepository.delete(s);
     }
