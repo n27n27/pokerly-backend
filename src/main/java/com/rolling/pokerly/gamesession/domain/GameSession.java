@@ -61,11 +61,9 @@ public class GameSession {
     @Column(length = 1000)
     private String notes;
 
-    // 현금 기준 손익: cash_out - (total_cash_in - discount)
     @Column(name = "profit_cash_realized", nullable = false)
     private Long profitCashRealized;
 
-    // EV 기준 손익(현금 + 포인트): profit_cash_realized + earned_point
     @Column(name = "profit_including_points", nullable = false)
     private Long profitIncludingPoints;
 
@@ -130,24 +128,22 @@ public class GameSession {
         recalcProfit();
     }
 
-    /**
-     * EV/Profit 정의 :
+     /**
+     * 새 설계 기준 손익 재계산:
      *
-     * - 포인트를 받는 것이 위닝/EV의 핵심
-     * - 포인트 사용(point_in)은 과거에 얻은 자산을 사용하는 것일 뿐,
-     *   오늘 세션의 profit 자체가 아님 → EV 계산에서는 제외
-     * - 캐시아웃은 현금 흐름
+     * 1) 현금 손익:
+     *    현금 실투입 = total_cash_in - discount
+     *    profit_cash_realized = cash_out - 현금 실투입
      *
-     * 현금 기준 손익:
-     *   profitCashRealized = cash_out - (total_cash_in - discount)
-     *
-     * EV 기준 손익(현금 + 포인트):
-     *   profitIncludingPoints = profitCashRealized + earned_point
+     * 2) EV 손익:
+     *    투자(현금+포인트) = total_cash_in + total_point_in - discount
+     *    profit_including_points = earned_point - 투자(현금+포인트)
      */
     private void recalcProfit() {
         long effectiveCashIn = totalCashIn - discount;
         this.profitCashRealized = cashOut - effectiveCashIn;
-        this.profitIncludingPoints = this.profitCashRealized + earnedPoint;
+        this.profitIncludingPoints = earnedPoint - (totalCashIn + totalPointIn - discount);
+
     }
 
     public void update(
