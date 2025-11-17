@@ -19,7 +19,6 @@ public class GameSessionRequest {
     private Integer entries;
 
     private Long cashOut;
-    private Long discount;
     private Long earnedPoint;
 
     private String notes;

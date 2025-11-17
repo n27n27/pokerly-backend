@@ -52,9 +52,6 @@ public class GameSession {
     @Column(name = "cash_out", nullable = false)
     private Long cashOut;
 
-    @Column(name = "discount", nullable = false)
-    private Long discount;
-
     @Column(name = "earned_point", nullable = false)
     private Long earnedPoint;   // 세션 중 적립된 포인트(현금 가치 기준)
 
@@ -85,7 +82,6 @@ public class GameSession {
             Long totalPointIn,
             Integer entries,
             Long cashOut,
-            Long discount,
             Long earnedPoint,
             String notes,
             Long profitCashRealized,
@@ -103,7 +99,6 @@ public class GameSession {
         this.totalPointIn = totalPointIn;
         this.entries = entries;
         this.cashOut = cashOut;
-        this.discount = discount;
         this.earnedPoint = earnedPoint;
         this.notes = notes;
         this.profitCashRealized = profitCashRealized;
@@ -132,17 +127,16 @@ public class GameSession {
      * 새 설계 기준 손익 재계산:
      *
      * 1) 현금 손익:
-     *    현금 실투입 = total_cash_in - discount
      *    profit_cash_realized = cash_out - 현금 실투입
      *
      * 2) EV 손익:
-     *    투자(현금+포인트) = total_cash_in + total_point_in - discount
+     *    투자(현금+포인트) = total_cash_in + total_point_in
      *    profit_including_points = earned_point - 투자(현금+포인트)
      */
     private void recalcProfit() {
-        long effectiveCashIn = totalCashIn - discount;
-        this.profitCashRealized = cashOut - effectiveCashIn;
-        this.profitIncludingPoints = earnedPoint - (totalCashIn + totalPointIn - discount);
+
+        this.profitCashRealized = cashOut - totalCashIn;
+        this.profitIncludingPoints = earnedPoint - (totalCashIn + totalPointIn);
 
     }
 
@@ -155,7 +149,6 @@ public class GameSession {
             Long totalPointIn,
             Integer entries,
             Long cashOut,
-            Long discount,
             Long earnedPoint,
             String notes
     ) {
@@ -167,7 +160,6 @@ public class GameSession {
         this.totalPointIn = totalPointIn;
         this.entries = entries;
         this.cashOut = cashOut;
-        this.discount = discount;
         this.earnedPoint = earnedPoint;
         this.notes = notes;
     }

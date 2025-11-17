@@ -53,7 +53,6 @@ public class GameSessionService {
         var totalCashIn    = Objects.requireNonNullElse(req.getTotalCashIn(), 0L);
         var totalPointIn   = Objects.requireNonNullElse(req.getTotalPointIn(), 0L);
         var cashOut        = Objects.requireNonNullElse(req.getCashOut(), 0L);
-        var discount       = Objects.requireNonNullElse(req.getDiscount(), 0L);
         var earnedPoint    = Objects.requireNonNullElse(req.getEarnedPoint(), 0L);
 
         var session = GameSession.builder()
@@ -66,7 +65,6 @@ public class GameSessionService {
                 .totalPointIn(totalPointIn)
                 .entries(entries)
                 .cashOut(cashOut)
-                .discount(discount)
                 .earnedPoint(earnedPoint)
                 .notes(req.getNotes())
                 // profit / createdAt / updatedAt 은 @PrePersist에서 계산
@@ -90,7 +88,6 @@ public class GameSessionService {
         var totalCashIn    = Objects.requireNonNullElse(req.getTotalCashIn(), 0L);
         var totalPointIn   = Objects.requireNonNullElse(req.getTotalPointIn(), 0L);
         var cashOut        = Objects.requireNonNullElse(req.getCashOut(), 0L);
-        var discount       = Objects.requireNonNullElse(req.getDiscount(), 0L);
         var earnedPoint    = Objects.requireNonNullElse(req.getEarnedPoint(), 0L);
 
         var previousEarned = s.getEarnedPoint();
@@ -104,7 +101,6 @@ public class GameSessionService {
                 totalPointIn,
                 entries,
                 cashOut,
-                discount,
                 earnedPoint,
                 req.getNotes()
         );
@@ -127,6 +123,10 @@ public class GameSessionService {
         if (earned != null && earned > 0L) {
             pointService.rollbackSessionEarnedPoint(userId, s.getVenueId(), s.getId(), earned);
         }
+
+        // 🔥 이 세션을 참조하고 있는 point_transactions 에서 FK만 끊기
+        // 실제 트랜잭션 레코드는 남겨둠
+        pointService.detachSessionFromTransactions(s.getId());
 
         gameSessionRepository.delete(s);
     }

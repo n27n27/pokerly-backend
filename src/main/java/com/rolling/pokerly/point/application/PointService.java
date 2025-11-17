@@ -220,4 +220,8 @@ public class PointService {
         pointTransactionRepository.save(tx);
     }
 
+    public void detachSessionFromTransactions(Long sessionId) {
+        pointTransactionRepository.detachByGameSessionId(sessionId);
+    }
+
 }
