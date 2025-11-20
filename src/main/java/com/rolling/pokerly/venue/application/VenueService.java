@@ -26,7 +26,7 @@ public class VenueService {
     private final PointTransactionRepository pointTransactionRepository;
 
     public List<VenueResponse> getMyVenues(Long userId) {
-        return venueRepository.findByUserIdOrderByNameAsc(userId).stream()
+        return venueRepository.findByCreatedByUserIdOrderByNameAsc(userId).stream()
                 .map(VenueResponse::from)
                 .toList();
     }
@@ -34,13 +34,13 @@ public class VenueService {
     @Transactional
     public VenueResponse create(Long userId, VenueRequest req) {
 
-        if (venueRepository.existsByUserIdAndName(userId, req.getName())) {
+        if (venueRepository.existsByCreatedByUserIdAndName(userId, req.getName())) {
 
             throw new ApiException(HttpStatus.CONFLICT, "CONFLICT", "VENUE_ALREADY_EXISTS.");
         }
 
         var venue = Venue.builder()
-                .userId(userId)
+                .createdByUserId(userId)
                 .name(req.getName())
                 .location(req.getLocation())
                 .notes(req.getNotes())
@@ -52,11 +52,11 @@ public class VenueService {
 
     @Transactional
     public VenueResponse update(Long userId, Long venueId, VenueRequest req) {
-        var venue = venueRepository.findByIdAndUserId(venueId, userId)
+        var venue = venueRepository.findByIdAndCreatedByUserId(venueId, userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "매장을 찾을 수 없습니다."));
 
         if (!venue.getName().equals(req.getName())
-                && venueRepository.existsByUserIdAndName(userId, req.getName())) {
+                && venueRepository.existsByCreatedByUserIdAndName(userId, req.getName())) {
             throw new ApiException(HttpStatus.CONFLICT, "CONFLICT", "VENUE_ALREADY_EXISTS.");
         }
 
@@ -66,7 +66,7 @@ public class VenueService {
 
     @Transactional
     public void delete(Long userId, Long venueId) {
-        var venue = venueRepository.findByIdAndUserId(venueId, userId)
+        var venue = venueRepository.findByIdAndCreatedByUserId(venueId, userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "매장을 찾을 수 없습니다."));
 
         // 1) 해당 매장에 연결된 게임 세션 존재 여부

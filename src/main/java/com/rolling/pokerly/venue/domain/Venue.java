@@ -24,29 +24,26 @@ public class Venue {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @Column(name = "user_id")
+    private Long createdByUserId;
 
-    @Column(nullable = false, length = 100)
     private String name;
-
-    @Column(length = 255)
     private String location;
-
-    @Column(length = 1000)
     private String notes;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    private String type;
+
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @Builder
-    private Venue(Long id, Long userId, String name, String location, String notes,
+    private Venue(Long id, Long createdByUserId, String name, String location, String notes,
                   LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
-        this.userId = userId;
+        this.createdByUserId = createdByUserId;
         this.name = name;
         this.location = location;
         this.notes = notes;
@@ -58,8 +55,15 @@ public class Venue {
     @SuppressWarnings("unused")
     void onCreate() {
         var now = LocalDateTime.now();
-        createdAt = now;
+
+        if (createdAt == null) {
+            createdAt = now;
+        }
         updatedAt = now;
+
+        if (type == null) {
+            type = "USER_PRIVATE";
+        }
     }
 
     @PreUpdate
