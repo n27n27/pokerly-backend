@@ -33,3 +33,5 @@ dbdata/
 docker-data/
 .env
 .env.*
+
+docker-compose.yml
