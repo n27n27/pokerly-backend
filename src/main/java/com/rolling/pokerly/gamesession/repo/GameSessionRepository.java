@@ -14,8 +14,8 @@ public interface GameSessionRepository extends JpaRepository<GameSession, Long> 
 
     List<GameSession> findByUserIdAndPlayDateBetweenOrderByPlayDateAsc(
             Long userId,
-            LocalDate from,
-            LocalDate to
+            LocalDate start,
+            LocalDate end
     );
 
     List<GameSession> findByUserIdAndVenueIdAndPlayDateBetweenOrderByPlayDateAsc(

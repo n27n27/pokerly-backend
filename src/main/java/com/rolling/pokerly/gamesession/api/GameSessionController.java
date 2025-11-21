@@ -38,7 +38,7 @@ public class GameSessionController {
             @RequestParam(name = "venueId", required = false) Long venueId
     ) {
         Long userId = extractUserId(auth);
-        var list = gameSessionService.getMonthlySessions(userId, year, month, venueId);
+        var list = gameSessionService.getMonthlySessions(userId, year, month);
         return ApiResponse.ok(list);
     }
 

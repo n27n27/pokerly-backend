@@ -1,7 +1,7 @@
 package com.rolling.pokerly.gamesession.dto;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 import com.rolling.pokerly.gamesession.domain.GameSession;
 
@@ -17,42 +17,39 @@ import lombok.NoArgsConstructor;
 public class GameSessionResponse {
 
     private Long id;
+    private Long userId;
     private Long venueId;
-    private LocalDate playDate;
+    private String playDate;
     private String title;
     private String gameType;
 
-    private Long totalCashIn;
-    private Long totalPointIn;
+    private Long buyInPerEntry;
     private Integer entries;
+    private Long discount;
 
-    private Long cashOut;
-    private Long earnedPoint;
+    private Long totalBuyIn;
+    private Long prize;
+    private Long netProfit;
     private String notes;
 
-    private Long profitCashRealized;
-    private Long profitIncludingPoints;
-
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
     public static GameSessionResponse from(GameSession s) {
+
+        var dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
+
         return GameSessionResponse.builder()
                 .id(s.getId())
+                .userId(s.getUserId())
                 .venueId(s.getVenueId())
-                .playDate(s.getPlayDate())
+                .playDate(Optional.ofNullable(s.getPlayDate()).map(d -> d.format(dateFormatter)).orElse(null))
                 .title(s.getTitle())
                 .gameType(s.getGameType())
-                .totalCashIn(s.getTotalCashIn())
-                .totalPointIn(s.getTotalPointIn())
+                .buyInPerEntry(s.getBuyInPerEntry())
                 .entries(s.getEntries())
-                .cashOut(s.getCashOut())
-                .earnedPoint(s.getEarnedPoint())
+                .discount(s.getDiscount())
+                .totalBuyIn(s.getTotalBuyIn())
+                .prize(s.getPrize())
+                .netProfit(s.getNetProfit())
                 .notes(s.getNotes())
-                .profitCashRealized(s.getProfitCashRealized())
-                .profitIncludingPoints(s.getProfitIncludingPoints())
-                .createdAt(s.getCreatedAt())
-                .updatedAt(s.getUpdatedAt())
                 .build();
     }
 }
