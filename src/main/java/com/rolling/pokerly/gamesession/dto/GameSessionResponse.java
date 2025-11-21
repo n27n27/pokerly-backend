@@ -20,7 +20,6 @@ public class GameSessionResponse {
     private Long userId;
     private Long venueId;
     private String playDate;
-    private String title;
     private String gameType;
 
     private Long buyInPerEntry;
@@ -41,7 +40,6 @@ public class GameSessionResponse {
                 .userId(s.getUserId())
                 .venueId(s.getVenueId())
                 .playDate(Optional.ofNullable(s.getPlayDate()).map(d -> d.format(dateFormatter)).orElse(null))
-                .title(s.getTitle())
                 .gameType(s.getGameType())
                 .buyInPerEntry(s.getBuyInPerEntry())
                 .entries(s.getEntries())

@@ -29,7 +29,6 @@ public class GameSessionService {
                 .userId(userId)
                 .venueId(req.getVenueId())
                 .playDate(req.getPlayDate())
-                .title(req.getTitle())
                 .gameType(req.getGameType())
                 .buyInPerEntry(req.getBuyInPerEntry())
                 .entries(req.getEntries())
@@ -51,7 +50,6 @@ public class GameSessionService {
 
         session.setVenueId(req.getVenueId());
         session.setPlayDate(req.getPlayDate());
-        session.setTitle(req.getTitle());
         session.setGameType(req.getGameType());
         session.setBuyInPerEntry(req.getBuyInPerEntry());
         session.setEntries(req.getEntries());

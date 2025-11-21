@@ -16,8 +16,6 @@ public class GameSessionRequest {
 
     private LocalDate playDate;
 
-    private String title;
-
     private String gameType;   // "GTD" | "데일리" | "기타"
 
     private Long buyInPerEntry;  // 1회 바인 금액

@@ -38,8 +38,6 @@ public class GameSession {
     @Column(name = "play_date")
     private LocalDate playDate;
 
-    private String title;
-
     // "GTD", "데일리", "기타"
     @Column(name = "game_type")
     private String gameType;
@@ -82,7 +80,7 @@ public class GameSession {
 
         long safeBuyInPerEntry = Objects.requireNonNullElse(buyInPerEntry, 0L);
         int safeEntries = Objects.requireNonNullElse(entries, 0);
-        long safeDiscount = Objects.requireNonNullElse(buyInPerEntry, 0L);
+        long safeDiscount = Objects.requireNonNullElse(discount, 0L);
         long safePrize = Objects.requireNonNullElse(prize, 0L);
 
         this.totalBuyIn = safeBuyInPerEntry * safeEntries - safeDiscount;
