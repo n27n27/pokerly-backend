@@ -1,7 +1,6 @@
 package com.rolling.pokerly.user.api;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -11,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.rolling.pokerly.core.exception.ApiException;
+import com.rolling.pokerly.core.response.ApiResponse;
 import com.rolling.pokerly.security.jwt.JwtTokenProvider;
 import com.rolling.pokerly.user.application.RefreshTokenService;
 import com.rolling.pokerly.user.application.UserService;
@@ -18,13 +18,15 @@ import com.rolling.pokerly.user.dto.AuthResponse;
 import com.rolling.pokerly.user.dto.LoginRequest;
 import com.rolling.pokerly.user.dto.RefreshRequest;
 import com.rolling.pokerly.user.dto.UserResponse;
-import com.rolling.pokerly.user.exception.InvalidRefreshTokenException;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Slf4j
 public class AuthController {
 
     private final AuthenticationManager authenticationManager; // SecurityConfig에서 주입
@@ -33,9 +35,12 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/login")
-    public AuthResponse login(@RequestBody LoginRequest request) {
+    public ApiResponse<AuthResponse> login(@RequestBody @Valid LoginRequest request) {
 
-        var token = new UsernamePasswordAuthenticationToken(request.getNickname(), request.getPassword());
+        var token = new UsernamePasswordAuthenticationToken(
+                request.getNickname(),
+                request.getPassword()
+        );
         authenticationManager.authenticate(token);
 
         var u = userService.loadUser(request.getNickname());
@@ -43,52 +48,60 @@ public class AuthController {
         var refresh = tokenProvider.createRefreshToken(u.getNickname());
         var refreshExp = tokenProvider.extractExpiry(refresh);
 
-        refreshTokenService.save(u.getNickname(),
-                                    refresh,
-                                    refreshExp);
+        refreshTokenService.save(u.getNickname(), refresh, refreshExp);
 
-        return AuthResponse.builder()
+        var auth = AuthResponse.builder()
                 .accessToken(access)
                 .refreshToken(refresh)
                 .user(UserResponse.from(u))
                 .build();
+
+        return ApiResponse.ok(auth);
     }
 
-    // 아주 단순한 리프레시 예시 (실서비스에선 Refresh 저장/블랙리스트 고려)
+    // 리프레시 토큰 갱신
     @PostMapping("/refresh")
-    public AuthResponse refresh(@RequestBody RefreshRequest req) {
+    public ApiResponse<AuthResponse> refresh(@RequestBody @Valid RefreshRequest req) {
+        var refreshToken = req.refreshToken();
+        log.info("리프레시 요청 토큰={}", refreshToken);
 
-        // 1) 토큰–닉네임 일치성(토큰 subject) 체크 -> 탈취/오용 최소화
-        var tokenNickname = tokenProvider.extractSubject(req.getRefreshToken());
-        if (!tokenNickname.equals(req.getNickname())) {
-            throw new InvalidRefreshTokenException();
+        // 1) 토큰에서 subject(닉네임) 추출
+        var nickname = tokenProvider.extractSubject(refreshToken);
+
+        // 2) 저장된 refresh 와 일치 & 미만료 확인
+        if (!refreshTokenService.validate(nickname, refreshToken)) {
+            throw new ApiException(
+                    HttpStatus.UNAUTHORIZED,
+                    "AUTH_INVALID_REFRESH",
+                    "유효하지 않거나 만료된 리프레시 토큰입니다."
+            );
         }
-        // 2) 저장된 refresh와 일치 & 미만료 확인
-        if (!refreshTokenService.validate(req.getNickname(), req.getRefreshToken())) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_REFRESH",
-                "유효하지 않거나 만료된 리프레시 토큰입니다.");
-        }
 
-        var u = userService.loadUser(req.getNickname());
+        // 3) 유저 로드
+        var u = userService.loadUser(nickname);
 
+        // 4) 새 액세스 / 리프레시 토큰 발급
         var newAccess = tokenProvider.createAccessToken(u.getId(), u.getNickname(), u.getRole());
         var newRefresh = tokenProvider.createRefreshToken(u.getNickname());
 
+        // 5) 리프레시 토큰 저장 (기존 토큰 덮어쓰기)
         var exp = tokenProvider.extractExpiry(newRefresh);
         refreshTokenService.save(u.getNickname(), newRefresh, exp);
 
-        return AuthResponse.builder()
+        var auth = AuthResponse.builder()
                 .accessToken(newAccess)
                 .refreshToken(newRefresh)
                 .user(UserResponse.from(u))
                 .build();
+
+        return ApiResponse.ok(auth);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(Authentication authentication) {
+    public ApiResponse<Void> logout(Authentication authentication) {
         var nickname = authentication.getName();   // JWT subject = nickname
         refreshTokenService.delete(nickname);      // DB에서 리프레시 토큰 제거
-        return ResponseEntity.noContent().build(); // 204
+        // 삭제 결과는 굳이 리턴 데이터 필요 없으니 null 로 ok
+        return ApiResponse.ok(null);
     }
-
 }
