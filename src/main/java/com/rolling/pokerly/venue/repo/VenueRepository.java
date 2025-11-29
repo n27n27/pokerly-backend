@@ -17,4 +17,7 @@ public interface VenueRepository extends JpaRepository<Venue, Long> {
 
     // 3) 유저가 같은 이름으로 venue를 이미 가지고 있는지 체크
     boolean existsByCreatedByUserIdAndName(Long createdByUserId, String name);
+
+    @Override
+    Optional<Venue> findById(Long id);
 }

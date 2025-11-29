@@ -1,6 +1,7 @@
 package com.rolling.pokerly.gamesession.application;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -9,9 +10,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.rolling.pokerly.core.exception.ApiException;
 import com.rolling.pokerly.gamesession.domain.GameSession;
+import com.rolling.pokerly.gamesession.dto.GameSessionOptionResponse;
 import com.rolling.pokerly.gamesession.dto.GameSessionRequest;
 import com.rolling.pokerly.gamesession.dto.GameSessionResponse;
 import com.rolling.pokerly.gamesession.repo.GameSessionRepository;
+import com.rolling.pokerly.venue.domain.Venue;
+import com.rolling.pokerly.venue.repo.VenueRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class GameSessionService {
 
     private final GameSessionRepository gameSessionRepository;
+    private final VenueRepository venueRepository;
 
     @Transactional
     public GameSessionResponse create(Long userId, GameSessionRequest req) {
@@ -89,5 +94,49 @@ public class GameSessionService {
                 .map(GameSessionResponse::from)
                 .toList();
     }
+
+    public List<GameSessionOptionResponse> getSessionOptions(Long userId) {
+
+        var sessions = gameSessionRepository.findTop100ByUserIdOrderByPlayDateDescIdDesc(userId);
+
+        List<GameSessionOptionResponse> result = new ArrayList<>();
+
+        for (var s : sessions) {
+            var venueName = resolveVenueName(s.getVenueId());
+            var label = buildLabel(s, venueName);
+
+            result.add(new GameSessionOptionResponse(
+                    s.getId(),
+                    label
+            ));
+        }
+
+        return result;
+    }
+
+    private String resolveVenueName(Long venueId) {
+        if (venueId == null) return null;
+        return venueRepository.findById(venueId)
+                .map(Venue::getName)
+                .orElse(null);
+    }
+
+    private String buildLabel(GameSession s, String venueName) {
+
+        var parts = new ArrayList<String>();
+
+        // 1) 날짜
+        if (s.getPlayDate() != null) {
+            parts.add(s.getPlayDate().toString());
+        }
+
+        // 2) 매장 이름
+        if (venueName != null && !venueName.isBlank()) {
+            parts.add(venueName);
+        }
+
+       return String.join(" · ", parts);
+    }
+
 
 }

@@ -26,4 +26,8 @@ public interface GameSessionRepository extends JpaRepository<GameSession, Long> 
     );
 
     boolean existsByUserIdAndVenueId(Long userId, Long venueId);
+
+    // 최근 100개 세션 (유저 기준, 날짜 최신순)
+    List<GameSession> findTop100ByUserIdOrderByPlayDateDescIdDesc(Long userId);
+
 }

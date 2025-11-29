@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.rolling.pokerly.core.controller.BaseController;
 import com.rolling.pokerly.core.response.ApiResponse;
-import com.rolling.pokerly.security.jwt.CustomPrincipal;
 import com.rolling.pokerly.venue.application.VenueService;
 import com.rolling.pokerly.venue.dto.VenueRequest;
 import com.rolling.pokerly.venue.dto.VenueResponse;
@@ -24,14 +24,14 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/venues")
 @RequiredArgsConstructor
-public class VenueController {
+public class VenueController extends BaseController {
 
     private final VenueService venueService;
 
     @GetMapping
     public ApiResponse<List<VenueResponse>> getMyVenues(Authentication auth) {
 
-        Long userId = extractUserId(auth);
+        Long userId = getUserId(auth);
 
         var venues = venueService.getMyVenues(userId);
         return ApiResponse.ok(venues);
@@ -41,7 +41,7 @@ public class VenueController {
     public ApiResponse<VenueResponse> createVenue(Authentication auth,
             @RequestBody VenueRequest req) {
 
-        Long userId = extractUserId(auth);
+        Long userId = getUserId(auth);
         var created = venueService.create(userId, req);
         return ApiResponse.ok(created);
     }
@@ -51,7 +51,7 @@ public class VenueController {
             @PathVariable("venueId") Long venueId,
             @RequestBody VenueRequest req) {
 
-        Long userId = extractUserId(auth);
+        Long userId = getUserId(auth);
         var updated = venueService.update(userId, venueId, req);
         return ApiResponse.ok(updated);
     }
@@ -59,15 +59,11 @@ public class VenueController {
     @DeleteMapping("/{venueId}")
     public ApiResponse<Void> deleteVenue(Authentication auth, @PathVariable("venueId") Long venueId) {
 
-        Long userId = extractUserId(auth);
+        Long userId = getUserId(auth);
         venueService.delete(userId, venueId);
         return ApiResponse.ok(null);
     }
 
-    private Long extractUserId(Authentication auth) {
-        CustomPrincipal p = (CustomPrincipal) auth.getPrincipal();
-        return p.getUserId();
-    }
 }
 
 

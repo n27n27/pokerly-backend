@@ -15,18 +15,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.rolling.pokerly.core.controller.BaseController;
 import com.rolling.pokerly.core.response.ApiResponse;
 import com.rolling.pokerly.gamesession.application.GameSessionService;
+import com.rolling.pokerly.gamesession.dto.GameSessionOptionResponse;
 import com.rolling.pokerly.gamesession.dto.GameSessionRequest;
 import com.rolling.pokerly.gamesession.dto.GameSessionResponse;
-import com.rolling.pokerly.security.jwt.CustomPrincipal;
 
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/game-sessions")
 @RequiredArgsConstructor
-public class GameSessionController {
+public class GameSessionController extends BaseController {
 
     private final GameSessionService gameSessionService;
 
@@ -37,7 +38,7 @@ public class GameSessionController {
             @RequestParam("month") int month,
             @RequestParam(name = "venueId", required = false) Long venueId
     ) {
-        Long userId = extractUserId(auth);
+        Long userId = getUserId(auth);
         var list = gameSessionService.getMonthlySessions(userId, year, month);
         return ApiResponse.ok(list);
     }
@@ -47,7 +48,7 @@ public class GameSessionController {
             Authentication auth,
             @PathVariable("id") Long id
     ) {
-        Long userId = extractUserId(auth);
+        Long userId = getUserId(auth);
         var res = gameSessionService.getOne(userId, id);
         return ApiResponse.ok(res);
     }
@@ -58,7 +59,7 @@ public class GameSessionController {
             Authentication auth,
             @RequestBody GameSessionRequest req
     ) {
-        Long userId = extractUserId(auth);
+        Long userId = getUserId(auth);
         var created = gameSessionService.create(userId, req);
         return ApiResponse.ok(created);
     }
@@ -69,7 +70,7 @@ public class GameSessionController {
             @PathVariable("id") Long id,
             @RequestBody GameSessionRequest req
     ) {
-        Long userId = extractUserId(auth);
+        Long userId = getUserId(auth);
         var updated = gameSessionService.update(userId, id, req);
         return ApiResponse.ok(updated);
     }
@@ -79,13 +80,15 @@ public class GameSessionController {
             Authentication auth,
             @PathVariable("id") Long id
     ) {
-        Long userId = extractUserId(auth);
+        Long userId = getUserId(auth);
         gameSessionService.delete(userId, id);
         return ApiResponse.ok(null);
     }
 
-    private Long extractUserId(Authentication auth) {
-        CustomPrincipal p = (CustomPrincipal) auth.getPrincipal();
-        return p.getUserId();
+    @GetMapping("/options")
+    public ApiResponse<List<GameSessionOptionResponse>> getSessionOptions(Authentication auth) {
+        Long userId = getUserId(auth);
+        var res = gameSessionService.getSessionOptions(userId);
+        return ApiResponse.ok(res);
     }
 }
