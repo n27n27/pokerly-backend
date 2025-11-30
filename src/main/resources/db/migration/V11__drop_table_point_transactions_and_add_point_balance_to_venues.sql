@@ -1,0 +1,2 @@
+ALTER TABLE venues ADD COLUMN point_balance BIGINT NOT NULL DEFAULT 0;
+DROP TABLE IF EXISTS point_transactions;

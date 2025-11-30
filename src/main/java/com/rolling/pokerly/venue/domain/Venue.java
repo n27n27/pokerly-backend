@@ -31,7 +31,12 @@ public class Venue {
     private String location;
     private String notes;
 
+    // 매장 타입 (추후 확정될 때 ENUM 대체 가능)
     private String type;
+
+    // ⭐ 포인트 잔액 추가
+    @Column(name = "point_balance", nullable = false)
+    private Long pointBalance;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -40,17 +45,29 @@ public class Venue {
     private LocalDateTime updatedAt;
 
     @Builder
-    private Venue(Long id, Long createdByUserId, String name, String location, String notes,
-                  LocalDateTime createdAt, LocalDateTime updatedAt) {
+    private Venue(
+            Long id,
+            Long createdByUserId,
+            String name,
+            String location,
+            String notes,
+            String type,
+            Long pointBalance,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt
+    ) {
         this.id = id;
         this.createdByUserId = createdByUserId;
         this.name = name;
         this.location = location;
         this.notes = notes;
+        this.type = type;
+        this.pointBalance = pointBalance != null ? pointBalance : 0L;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
 
+    // 최초 생성 시 자동 설정
     @PrePersist
     @SuppressWarnings("unused")
     void onCreate() {
@@ -61,8 +78,14 @@ public class Venue {
         }
         updatedAt = now;
 
+        // type 기본값 설정
         if (type == null) {
             type = "USER_PRIVATE";
+        }
+
+        // pointBalance 기본값
+        if (pointBalance == null) {
+            pointBalance = 0L;
         }
     }
 
@@ -72,9 +95,12 @@ public class Venue {
         updatedAt = LocalDateTime.now();
     }
 
-    public void update(String name, String location, String notes) {
+    // 기존 update 확장 — pointBalance 추가
+    public void update(String name, String location, String notes, Long pointBalance) {
         this.name = name;
         this.location = location;
         this.notes = notes;
+
+        this.pointBalance = pointBalance != null ? pointBalance : this.pointBalance;
     }
 }

@@ -20,7 +20,6 @@ import com.rolling.pokerly.venue.dto.VenueResponse;
 
 import lombok.RequiredArgsConstructor;
 
-
 @RestController
 @RequestMapping("/api/venues")
 @RequiredArgsConstructor
@@ -30,11 +29,19 @@ public class VenueController extends BaseController {
 
     @GetMapping
     public ApiResponse<List<VenueResponse>> getMyVenues(Authentication auth) {
-
         Long userId = getUserId(auth);
-
         var venues = venueService.getMyVenues(userId);
         return ApiResponse.ok(venues);
+    }
+
+    // ✅ 단일 매장 조회 추가
+    @GetMapping("/{venueId}")
+    public ApiResponse<VenueResponse> getVenue(Authentication auth,
+            @PathVariable("venueId") Long venueId) {
+
+        Long userId = getUserId(auth);
+        var venue = venueService.getMyVenue(userId, venueId);
+        return ApiResponse.ok(venue);
     }
 
     @PostMapping
@@ -63,7 +70,4 @@ public class VenueController extends BaseController {
         venueService.delete(userId, venueId);
         return ApiResponse.ok(null);
     }
-
 }
-
-
