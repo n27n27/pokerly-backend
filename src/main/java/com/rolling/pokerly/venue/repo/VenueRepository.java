@@ -1,5 +1,6 @@
 package com.rolling.pokerly.venue.repo;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,4 +21,9 @@ public interface VenueRepository extends JpaRepository<Venue, Long> {
 
     @Override
     Optional<Venue> findById(Long id);
+
+    List<Venue> findByIdIn(Collection<Long> ids);
+
+    List<Venue> findByCreatedByUserId(Long userId);
+
 }
