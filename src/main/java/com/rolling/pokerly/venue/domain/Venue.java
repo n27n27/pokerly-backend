@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,6 +19,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "venues")
 @Getter
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class Venue {
 
     @Id
@@ -44,28 +47,6 @@ public class Venue {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Builder
-    private Venue(
-            Long id,
-            Long createdByUserId,
-            String name,
-            String location,
-            String notes,
-            String type,
-            Long pointBalance,
-            LocalDateTime createdAt,
-            LocalDateTime updatedAt
-    ) {
-        this.id = id;
-        this.createdByUserId = createdByUserId;
-        this.name = name;
-        this.location = location;
-        this.notes = notes;
-        this.type = type;
-        this.pointBalance = pointBalance != null ? pointBalance : 0L;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
 
     // 최초 생성 시 자동 설정
     @PrePersist
