@@ -25,6 +25,11 @@ import lombok.Setter;
 @Builder
 public class GameSession {
 
+    public static final String SESSION_TYPE_VENUE = "VENUE";
+    public static final String SESSION_TYPE_MAJOR = "MAJOR";
+    public static final String SESSION_TYPE_ONLINE = "ONLINE";
+    public static final String SESSION_TYPE_OTHER = "OTHER";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -37,6 +42,9 @@ public class GameSession {
 
     @Column(name = "play_date")
     private LocalDate playDate;
+
+    @Column(name = "session_type")
+    private String sessionType; // VENUE / MAJOR / ONLINE / OTHER
 
     // "GTD", "데일리", "기타"
     @Column(name = "game_type")
@@ -66,7 +74,15 @@ public class GameSession {
     @Column
     private String notes;
 
-     @Column(name = "created_at", insertable = false, updatable = false)
+    // 광고된 GTD 금액 (옵션)
+    @Column(name = "gtd_amount")
+    private Long gtdAmount;
+
+    // 토너 전체 엔트리 수 (옵션)
+    @Column(name = "field_entries")
+    private Integer fieldEntries;
+
+    @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", insertable = false, updatable = false)
