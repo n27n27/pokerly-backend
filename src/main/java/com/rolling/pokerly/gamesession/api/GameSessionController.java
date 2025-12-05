@@ -34,8 +34,7 @@ public class GameSessionController {
     public ApiResponse<List<GameSessionResponse>> getMonthlySessions(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @RequestParam("year") int year,
-            @RequestParam("month") int month,
-            @RequestParam(name = "venueId", required = false) Long venueId
+            @RequestParam("month") int month
     ) {
         var list = gameSessionService.getMonthlySessions(userId, year, month);
         return ApiResponse.ok(list);

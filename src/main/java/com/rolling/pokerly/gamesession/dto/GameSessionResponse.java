@@ -5,49 +5,44 @@ import java.util.Optional;
 
 import com.rolling.pokerly.gamesession.domain.GameSession;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-@Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class GameSessionResponse {
-
-    private Long id;
-    private Long userId;
-    private Long venueId;
-    private String playDate;
-    private String gameType;
-
-    private Long buyInPerEntry;
-    private Integer entries;
-    private Long discount;
-
-    private Long totalBuyIn;
-    private Long prize;
-    private Long netProfit;
-    private String notes;
+public record GameSessionResponse(
+        Long id,
+        Long userId,
+        Long venueId,
+        String playDate,
+        String sessionType,
+        String gameType,
+        Long buyInPerEntry,
+        Integer entries,
+        Long discount,
+        Long totalBuyIn,
+        Long prize,
+        Long netProfit,
+        String notes,
+        Long gtdAmount,
+        Integer fieldEntries
+) {
 
     public static GameSessionResponse from(GameSession s) {
 
-        var dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
+        var formatter = DateTimeFormatter.ISO_LOCAL_DATE;
 
-        return GameSessionResponse.builder()
-                .id(s.getId())
-                .userId(s.getUserId())
-                .venueId(s.getVenueId())
-                .playDate(Optional.ofNullable(s.getPlayDate()).map(d -> d.format(dateFormatter)).orElse(null))
-                .gameType(s.getGameType())
-                .buyInPerEntry(s.getBuyInPerEntry())
-                .entries(s.getEntries())
-                .discount(s.getDiscount())
-                .totalBuyIn(s.getTotalBuyIn())
-                .prize(s.getPrize())
-                .netProfit(s.getNetProfit())
-                .notes(s.getNotes())
-                .build();
+        return new GameSessionResponse(
+                s.getId(),
+                s.getUserId(),
+                s.getVenueId(),
+                Optional.ofNullable(s.getPlayDate()).map(d -> d.format(formatter)).orElse(null),
+                s.getSessionType(),
+                s.getGameType(),
+                s.getBuyInPerEntry(),
+                s.getEntries(),
+                s.getDiscount(),
+                s.getTotalBuyIn(),
+                s.getPrize(),
+                s.getNetProfit(),
+                s.getNotes(),
+                s.getGtdAmount(),
+                s.getFieldEntries()
+        );
     }
 }
