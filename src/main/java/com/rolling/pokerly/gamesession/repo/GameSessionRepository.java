@@ -36,4 +36,6 @@ public interface GameSessionRepository extends JpaRepository<GameSession, Long> 
     // 해당 월 범위 세션들
     List<GameSession> findByUserIdAndPlayDateBetween(Long userId, LocalDate start, LocalDate end);
 
+    List<GameSession> findByUserId(Long userId);
+
 }
