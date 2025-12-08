@@ -114,11 +114,16 @@ public class DashboardService {
                 .limit(3)
                 .toList();
 
+        // 세션 수 많이 간 순, 동률이면 손실이 덜한(= 이익이 더 큰) 순
+        Comparator<VenueStat> byVisit = Comparator
+                .comparingInt(VenueStat::sessionCount)      // 기본: 오름차순
+                .reversed()                                 // → 내림차순 (많이 간 순)
+                .thenComparing(
+                        Comparator.comparingLong(VenueStat::totalProfit).reversed()
+                );                                          // 이익도 내림차순 (손실 적은 순)
+
         List<VenueStat> topVisitVenues = venueStats.stream()
-                .sorted(
-                        Comparator.comparingInt(VenueStat::sessionCount).reversed()
-                                .thenComparingLong(VenueStat::totalProfit).reversed()
-                )
+                .sorted(byVisit)
                 .limit(3)
                 .toList();
 
