@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.rolling.pokerly.gamesession.domain.GameSession;
 
@@ -35,7 +37,16 @@ public interface GameSessionRepository extends JpaRepository<GameSession, Long> 
 
     // 해당 월 범위 세션들
     List<GameSession> findByUserIdAndPlayDateBetween(Long userId, LocalDate start, LocalDate end);
-
     List<GameSession> findByUserId(Long userId);
+
+    @Query("""
+        select s
+        from GameSession s
+        where s.userId = :userId
+          and s.sessionType = 'VENUE'
+          and s.venueId is not null
+        """)
+    List<GameSession> findVenueSessionsByUserId(@Param("userId") Long userId);
+
 
 }
