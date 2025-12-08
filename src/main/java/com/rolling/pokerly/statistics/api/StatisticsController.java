@@ -7,7 +7,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.rolling.pokerly.statistics.application.MonthlyStatisticsService;
+import com.rolling.pokerly.statistics.application.StatisticsSessionService;
+import com.rolling.pokerly.statistics.application.VenueStatsService;
 import com.rolling.pokerly.statistics.dto.MonthlyStatisticsResponse;
+import com.rolling.pokerly.statistics.dto.StatisticsSessionResponse;
+import com.rolling.pokerly.statistics.dto.VenueStatsResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -17,6 +21,8 @@ import lombok.RequiredArgsConstructor;
 public class StatisticsController {
 
     private final MonthlyStatisticsService monthlyStatisticsService;
+    private final StatisticsSessionService sessionService;
+    private final VenueStatsService venueStatsService;
 
     @GetMapping("/monthly")
     public MonthlyStatisticsResponse getMonthlyStatistics(
@@ -26,5 +32,17 @@ public class StatisticsController {
     ) {
 
         return monthlyStatisticsService.getMonthlyStatistics(userId, year, month);
+    }
+
+    @GetMapping("/sessions")
+    public StatisticsSessionResponse getSessionStats(@AuthenticationPrincipal(expression = "userId") Long userId) {
+        return sessionService.getSessionStats(userId);
+    }
+
+    @GetMapping("/venues")
+    public VenueStatsResponse getVenueStatistics(
+            @AuthenticationPrincipal(expression = "userId") Long userId
+    ) {
+        return venueStatsService.getVenueStats(userId);
     }
 }
