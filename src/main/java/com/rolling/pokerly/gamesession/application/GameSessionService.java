@@ -44,11 +44,19 @@ public class GameSessionService {
     public GameSessionResponse create(Long userId, GameSessionRequest req) {
 
         String sessionType = normalizeSessionType(req.sessionType());
-        validateSessionTypeAndVenue(sessionType, req.venueId());
+
+        VenuePolicy policy = normalizeVenuePolicy(
+                sessionType,
+                req.venueId(),
+                req.isCollab(),
+                req.collabLabel()
+        );
 
         var session = GameSession.builder()
                 .userId(userId)
-                .venueId(req.venueId())
+                .venueId(policy.venueId())
+                .collab(policy.isCollab())
+                .collabLabel(policy.collabLabel())
                 .playDate(req.playDate())
                 .sessionType(sessionType)
                 .gameType(req.gameType())
@@ -74,11 +82,17 @@ public class GameSessionService {
                         new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "게임 세션을 찾을 수 없습니다."));
 
         String sessionType = normalizeSessionType(req.sessionType());
-        validateSessionTypeAndVenue(sessionType, req.venueId());
 
-        session.setVenueId(req.venueId());
-        session.setPlayDate(req.playDate());
+        VenuePolicy policy = normalizeVenuePolicy(
+                sessionType,
+                req.venueId(),
+                req.isCollab(),
+                req.collabLabel()
+        );
+
+        session.setVenueId(policy.venueId());
         session.setSessionType(sessionType);
+        session.setPlayDate(req.playDate());
         session.setGameType(req.gameType());
         session.setBuyInPerEntry(req.buyInPerEntry());
         session.setEntries(req.entries());
@@ -87,6 +101,11 @@ public class GameSessionService {
         session.setNotes(req.notes());
         session.setGtdAmount(req.gtdAmount());
         session.setFieldEntries(req.fieldEntries());
+
+        // ✅ 콜라보 필드
+        // (setter 이름이 다르면 여기만 맞춰 수정)
+        session.setCollab(policy.isCollab());
+        session.setCollabLabel(policy.collabLabel());
 
         session.recalc();
 
@@ -166,8 +185,17 @@ public class GameSessionService {
 
         // 2) 매장 / 타입
         if (GameSession.SESSION_TYPE_VENUE.equals(s.getSessionType())) {
-            if (venueName != null && !venueName.isBlank()) {
-                parts.add(venueName);
+            // 콜라보면 라벨 우선
+            if (s.isCollab()) {
+                if (s.getCollabLabel() != null && !s.getCollabLabel().isBlank()) {
+                    parts.add("[콜라보] " + s.getCollabLabel());
+                } else {
+                    parts.add("[콜라보]");
+                }
+            } else {
+                if (venueName != null && !venueName.isBlank()) {
+                    parts.add(venueName);
+                }
             }
         } else {
             // 온라인/대회/기타는 타입 태그만 붙여서 구분
@@ -196,21 +224,28 @@ public class GameSessionService {
         return upper;
     }
 
+    // -------------------------
+    // ✅ VENUE 정책(단독 vs 콜라보)
+    // -------------------------
+
+    private record VenuePolicy(
+            Long venueId,
+            boolean isCollab,
+            String collabLabel
+    ) {}
+
     /**
-     * sessionType 과 venueId 조합 검증
-     * - VENUE  : venueId 필수
-     * - 나머지 : venueId 없어야 정상
+     * 세션 타입/매장/콜라보 조합 검증 + 정규화
+     *
+     * 정책:
+     * - VENUE 아님: venueId 금지, 콜라보 금지
+     * - VENUE & 단독: venueId 필수, collabLabel null
+     * - VENUE & 콜라보: venueId는 null로 강제, collabLabel 필수
      */
-    private void validateSessionTypeAndVenue(String sessionType, Long venueId) {
-        if (GameSession.SESSION_TYPE_VENUE.equals(sessionType)) {
-            if (venueId == null) {
-                throw new ApiException(
-                        HttpStatus.BAD_REQUEST,
-                        "VENUE_ID_REQUIRED",
-                        "VENUE 타입 세션에는 venueId가 필요합니다."
-                );
-            }
-        } else {
+    private VenuePolicy normalizeVenuePolicy(String sessionType, Long venueId, Boolean isCollab, String collabLabel) {
+
+        // non-VENUE: venueId 금지 + collab 금지
+        if (!GameSession.SESSION_TYPE_VENUE.equals(sessionType)) {
             if (venueId != null) {
                 throw new ApiException(
                         HttpStatus.BAD_REQUEST,
@@ -218,6 +253,40 @@ public class GameSessionService {
                         "해당 세션 타입에는 venueId를 지정할 수 없습니다."
                 );
             }
+            if (Boolean.TRUE.equals(isCollab) || (collabLabel != null && !collabLabel.isBlank())) {
+                throw new ApiException(
+                        HttpStatus.BAD_REQUEST,
+                        "COLLAB_NOT_ALLOWED",
+                        "VENUE 타입이 아닌 세션에는 콜라보 정보를 지정할 수 없습니다."
+                );
+            }
+            return new VenuePolicy(null, false, null);
         }
+
+        // VENUE: collab 여부에 따라 정책 분기
+        boolean collab = Boolean.TRUE.equals(isCollab);
+
+        if (collab) {
+            if (collabLabel == null || collabLabel.isBlank()) {
+                throw new ApiException(
+                        HttpStatus.BAD_REQUEST,
+                        "COLLAB_LABEL_REQUIRED",
+                        "콜라보 세션에는 collabLabel이 필요합니다."
+                );
+            }
+            // 콜라보는 venueId를 null로 강제(단독 매장 통계에 섞이지 않게)
+            return new VenuePolicy(null, true, collabLabel.trim());
+        }
+
+        // 단독 매장: venueId 필수
+        if (venueId == null) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "VENUE_ID_REQUIRED",
+                    "VENUE 타입(단독) 세션에는 venueId가 필요합니다."
+            );
+        }
+
+        return new VenuePolicy(venueId, false, null);
     }
 }

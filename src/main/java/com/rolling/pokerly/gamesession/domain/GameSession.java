@@ -88,6 +88,12 @@ public class GameSession {
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "is_collab", nullable = false)
+    private boolean collab;           // 협업 세션 여부
+
+    @Column(name = "collab_label", length = 50)
+    private String collabLabel;       // 협업 세션 라벨
+
     /**
      * buyInPerEntry, entries, discount, prize 값을 기반으로
      * totalBuyIn / netProfit 을 다시 계산한다.

@@ -19,5 +19,8 @@ public record GameSessionRequest (
         String notes,
 
         Long gtdAmount,        // 광고된 GTD 금액 (옵션)
-        Integer fieldEntries   // 토너 전체 엔트리 수 (옵션)
+        Integer fieldEntries,   // 토너 전체 엔트리 수 (옵션)
+
+        Boolean isCollab,         // 협업 세션 여부
+        String collabLabel        // 협업 세션 라벨
 ) { }

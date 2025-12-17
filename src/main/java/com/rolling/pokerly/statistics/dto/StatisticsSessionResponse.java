@@ -5,7 +5,6 @@ import java.util.List;
 public record StatisticsSessionResponse(
         Summary summary,
         List<TypeStat> byType,
-        List<VenueStat> byVenue,
         ItmPattern itmpattern,
         ProfitDistribution profitDistribution,
         ConditionAnalysis conditionAnalysis,
@@ -34,19 +33,6 @@ public record StatisticsSessionResponse(
             long itmCount,
             double itmRatio
     ) { }
-
-    // 매장별 성과 (Top 3)
-    public record VenueStat(
-            Long venueId,
-            String venueName,
-            long sessions,
-            long totalBuyIn,
-            long totalProfit,
-            double roi,
-            long itmCount,
-            double itmRatio
-    ) { }
-
     // ITM 패턴
     public record ItmPattern(
             int maxConsecutiveItm,
@@ -84,6 +70,8 @@ public record StatisticsSessionResponse(
             long netProfit,
             double roi,
             String venueName,
-            String sessionType
+            String sessionType,
+            boolean isCollab,
+            String collabLabel
     ) { }
 }

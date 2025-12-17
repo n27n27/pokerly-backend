@@ -1,19 +1,22 @@
 package com.rolling.pokerly.statistics.application;
 
+import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
 import com.rolling.pokerly.gamesession.domain.GameSession;
 import com.rolling.pokerly.gamesession.repo.GameSessionRepository;
 import com.rolling.pokerly.journal.domain.GameJournal;
 import com.rolling.pokerly.journal.repo.GameJournalRepository;
 import com.rolling.pokerly.statistics.dto.StatisticsSessionResponse;
-import com.rolling.pokerly.venue.domain.Venue;
-import com.rolling.pokerly.venue.repo.VenueRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +24,6 @@ public class StatisticsSessionService {
 
     private final GameSessionRepository sessionRepository;
     private final GameJournalRepository journalRepository;
-    private final VenueRepository venueRepository;
 
     public StatisticsSessionResponse getSessionStats(Long userId) {
 
@@ -50,63 +52,49 @@ public class StatisticsSessionService {
                 itmRatio
         );
 
-        // 2) 타입별 성과
+        // 2) 타입별 성과 (✅ sessionType null-safe)
         var byType = list.stream()
-                .collect(Collectors.groupingBy(GameSession::getSessionType))
+                .collect(Collectors.groupingBy(s -> {
+                    String t = s.getSessionType();
+                    return (t == null || t.isBlank()) ? "UNKNOWN" : t;
+                }))
                 .entrySet()
                 .stream()
                 .map(e -> buildTypeStat(e.getKey(), e.getValue()))
                 .toList();
 
-        // 3) 매장별 손익 (Top3만) - venueId -> venueName을 한 번에 조회
-        Map<Long, List<GameSession>> byVenueMap = list.stream()
-                .collect(Collectors.groupingBy(GameSession::getVenueId));
-
-        // null 아닌 venueId만 모아서 한 번에 조회
-        Set<Long> venueIds = byVenueMap.keySet().stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        Map<Long, String> venueNameMap = venueRepository.findAllById(venueIds).stream()
-                .collect(Collectors.toMap(
-                        Venue::getId,
-                        Venue::getName
-                ));
-
-        var byVenue = byVenueMap.entrySet()
-                .stream()
-                .map(e -> buildVenueStat(e.getKey(), e.getValue(), venueNameMap))
-                .sorted(Comparator.comparing(StatisticsSessionResponse.VenueStat::totalProfit)
-                        .reversed())
-                .limit(3)
-                .toList();
-
-        // 4) ITM 패턴
+        // 3) ITM 패턴 (✅ playDate null-safe sort)
         var itmPattern = buildItmPattern(list);
 
-        // 5) 손익 분포
+        // 4) 손익 분포
         var distribution = buildDistribution(list);
 
-        // 6) 컨디션 분석 (일지 + 하루 손익)
+        // 5) 컨디션 분석 (일지 + 하루 손익)
         var condition = buildConditionAnalysis(userId, list);
 
-        // 7) Top / Worst 세션
+        // 6) Top / Worst 세션 (venueName은 그대로 "기타"만 사용)
         var top = list.stream()
-                .sorted(Comparator.comparing(GameSession::getNetProfit).reversed())
+                .sorted(Comparator.comparing(
+                        GameSession::getNetProfit,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ).reversed())
                 .limit(3)
-                .map(s -> simpleSession(s, venueNameMap))
+                .map(this::simpleSession)
                 .toList();
 
         var worst = list.stream()
-                .sorted(Comparator.comparing(GameSession::getNetProfit))
+                .sorted(Comparator.comparing(
+                        GameSession::getNetProfit,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ))
                 .limit(3)
-                .map(s -> simpleSession(s, venueNameMap))
+                .map(this::simpleSession)
                 .toList();
 
+        // ✅ byVenue 제거된 생성자 형태에 맞춰 반환
         return new StatisticsSessionResponse(
                 summary,
                 byType,
-                byVenue,
                 itmPattern,
                 distribution,
                 condition,
@@ -137,48 +125,15 @@ public class StatisticsSessionService {
         );
     }
 
-    /**
-     * venueId -> venueName 매핑 버전 (N+1 방지)
-     */
-    private StatisticsSessionResponse.VenueStat buildVenueStat(
-            Long venueId,
-            List<GameSession> list,
-            Map<Long, String> venueNameMap
-    ) {
-        String name;
-        if (venueId == null) {
-            name = "기타";
-        } else {
-            // 조회 안 되면 "삭제된 매장"으로 표시
-            name = venueNameMap.getOrDefault(venueId, "삭제된 매장");
-        }
-
-        long sessions = list.size();
-        long totalBuyIn = list.stream().mapToLong(s -> safe(s.getTotalBuyIn())).sum();
-        long profit = list.stream().mapToLong(s -> safe(s.getNetProfit())).sum();
-        long itm = list.stream().filter(s -> safe(s.getPrize()) > 0).count();
-
-        double roi = totalBuyIn == 0 ? 0 : (double) profit / totalBuyIn * 100;
-        double itmRatio = sessions == 0 ? 0 : (double) itm / sessions;
-
-        return new StatisticsSessionResponse.VenueStat(
-                venueId,
-                name,
-                sessions,
-                totalBuyIn,
-                profit,
-                roi,
-                itm,
-                itmRatio
-        );
-    }
-
     private StatisticsSessionResponse.ItmPattern buildItmPattern(List<GameSession> list) {
         int maxItm = 0, maxLose = 0;
         int curItm = 0, curLose = 0;
 
         for (GameSession s : list.stream()
-                .sorted(Comparator.comparing(GameSession::getPlayDate))
+                .sorted(Comparator.comparing(
+                        GameSession::getPlayDate,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ))
                 .toList()) {
 
             if (safe(s.getPrize()) > 0) {
@@ -224,15 +179,17 @@ public class StatisticsSessionService {
             Long userId,
             List<GameSession> sessions
     ) {
-        // 날짜별 손익 합계
-        Map<LocalDate, Long> profitByDate = sessions.stream()
+        var sessionsWithDate = sessions.stream()
+                .filter(s -> s.getPlayDate() != null)
+                .toList();
+
+        Map<LocalDate, Long> profitByDate = sessionsWithDate.stream()
                 .collect(Collectors.groupingBy(
                         GameSession::getPlayDate,
                         Collectors.summingLong(s -> safe(s.getNetProfit()))
                 ));
 
-        // 🔥 날짜별 바인 합계 (ROI 계산용)
-        Map<LocalDate, Long> buyInByDate = sessions.stream()
+        Map<LocalDate, Long> buyInByDate = sessionsWithDate.stream()
                 .collect(Collectors.groupingBy(
                         GameSession::getPlayDate,
                         Collectors.summingLong(s -> safe(s.getTotalBuyIn()))
@@ -247,7 +204,6 @@ public class StatisticsSessionService {
 
         var byCondition = aggregateScore(journals, profitByDate, buyInByDate, GameJournal::getMoodScore);
         var byMental = aggregateScore(journals, profitByDate, buyInByDate, GameJournal::getFocusScore);
-        // 피로 / 에너지는 일단 energyScore 기준 (원하면 나중에 조합 로직 넣기)
         var byFatigue = aggregateScore(journals, profitByDate, buyInByDate, GameJournal::getEnergyScore);
 
         return new StatisticsSessionResponse.ConditionAnalysis(
@@ -257,20 +213,14 @@ public class StatisticsSessionService {
         );
     }
 
-    /**
-     * 점수별:
-     *  - count: 해당 점수 일수
-     *  - avgProfit: 하루 평균 손익
-     *  - avgRoi: (해당 점수 날들의 profit 합 / buy-in 합) * 100
-     */
     private List<StatisticsSessionResponse.ConditionAnalysis.ConditionEntry> aggregateScore(
             List<GameJournal> journals,
             Map<LocalDate, Long> profitByDate,
             Map<LocalDate, Long> buyInByDate,
             Function<GameJournal, Integer> getter
     ) {
-        // [0] = count, [1] = profitSum, [2] = buyInSum
-        Map<Integer, long[]> acc = new HashMap<>();
+        Map<Integer, long[]> acc = new HashMap<>(); // [0]=count, [1]=profitSum, [2]=buyInSum
+
         for (GameJournal j : journals) {
             Integer score = getter.apply(j);
             if (score == null) continue;
@@ -279,9 +229,9 @@ public class StatisticsSessionService {
             long buyIn = buyInByDate.getOrDefault(j.getJournalDate(), 0L);
 
             long[] v = acc.computeIfAbsent(score, k -> new long[3]);
-            v[0]++;          // count
-            v[1] += profit;  // profit sum
-            v[2] += buyIn;   // buy-in sum
+            v[0]++;
+            v[1] += profit;
+            v[2] += buyIn;
         }
 
         return acc.entrySet()
@@ -294,9 +244,7 @@ public class StatisticsSessionService {
                     long sumBuyIn = e.getValue()[2];
 
                     long avgProfit = count == 0 ? 0 : sumProfit / count;
-                    double avgRoi = (sumBuyIn == 0)
-                            ? 0.0
-                            : (double) sumProfit / sumBuyIn * 100;
+                    double avgRoi = (sumBuyIn == 0) ? 0.0 : (double) sumProfit / sumBuyIn * 100;
 
                     return new StatisticsSessionResponse.ConditionAnalysis.ConditionEntry(
                             score,
@@ -308,21 +256,15 @@ public class StatisticsSessionService {
                 .toList();
     }
 
-    private StatisticsSessionResponse.SimpleSession simpleSession(
-            GameSession s,
-            Map<Long, String> venueNameMap
-    ) {
+    private StatisticsSessionResponse.SimpleSession simpleSession(GameSession s) {
         long totalBuyIn = safe(s.getTotalBuyIn());
         long profit = safe(s.getNetProfit());
         double roi = totalBuyIn == 0 ? 0 : (double) profit / totalBuyIn * 100;
 
-        Long venueId = s.getVenueId();
-        String venueName;
-        if (venueId == null) {
-            venueName = "기타";
-        } else {
-            venueName = venueNameMap.getOrDefault(venueId, "삭제된 매장");
-        }
+        // ✅ 세션 통계 탭에서는 매장 Top3를 없앴으니
+        // Top/Worst 카드도 venueName을 “기타/매장” 정도만 유지하거나,
+        // 프론트에서 필요하면 여기 로직을 다시 확장하면 됨.
+        String venueName = (s.getVenueId() == null) ? "기타" : "매장";
 
         return new StatisticsSessionResponse.SimpleSession(
                 s.getId(),
@@ -332,7 +274,9 @@ public class StatisticsSessionService {
                 profit,
                 roi,
                 venueName,
-                s.getSessionType()
+                s.getSessionType(),
+                s.isCollab(),
+                s.getCollabLabel()
         );
     }
 
@@ -345,7 +289,6 @@ public class StatisticsSessionService {
     private StatisticsSessionResponse emptyResponse() {
         return new StatisticsSessionResponse(
                 new StatisticsSessionResponse.Summary(0, 0, 0, 0, 0, 0, 0),
-                List.of(),
                 List.of(),
                 new StatisticsSessionResponse.ItmPattern(0, 0),
                 new StatisticsSessionResponse.ProfitDistribution(List.of(), 0, 0, 0),

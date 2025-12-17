@@ -20,7 +20,9 @@ public record GameSessionResponse(
         Long netProfit,
         String notes,
         Long gtdAmount,
-        Integer fieldEntries
+        Integer fieldEntries,
+        Boolean isCollab,
+        String collabLabel
 ) {
 
     public static GameSessionResponse from(GameSession s) {
@@ -42,7 +44,9 @@ public record GameSessionResponse(
                 s.getNetProfit(),
                 s.getNotes(),
                 s.getGtdAmount(),
-                s.getFieldEntries()
+                s.getFieldEntries(),
+                s.isCollab(),
+                s.getCollabLabel()
         );
     }
 }
