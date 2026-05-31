@@ -3,9 +3,11 @@ package com.rolling.pokerly.handlog.api;
 import java.util.List;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,7 +22,6 @@ import com.rolling.pokerly.handlog.dto.HandLogHandCreateRequest;
 import com.rolling.pokerly.handlog.dto.HandLogHandResponse;
 
 import lombok.RequiredArgsConstructor;
-
 @RestController
 @RequestMapping("/api/hand-log")
 @RequiredArgsConstructor
@@ -83,5 +84,39 @@ public class HandLogController {
     ) {
         var res = handLogService.createHand(userId, eventId, blindLevelId, request);
         return ApiResponse.ok(res);
+    }
+
+    @GetMapping("/events/{eventId}/blind-levels/{blindLevelId}/hands/{handId}")
+    public ApiResponse<HandLogHandResponse> getHandDetail(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable(name = "eventId") Long eventId,
+            @PathVariable(name = "blindLevelId") Long blindLevelId,
+            @PathVariable(name = "handId") Long handId
+    ) {
+        var res = handLogService.getHandDetail(userId, eventId, blindLevelId, handId);
+        return ApiResponse.ok(res);
+    }
+
+    @PutMapping("/events/{eventId}/blind-levels/{blindLevelId}/hands/{handId}")
+    public ApiResponse<HandLogHandResponse> updateHand(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable(name = "eventId") Long eventId,
+            @PathVariable(name = "blindLevelId") Long blindLevelId,
+            @PathVariable(name = "handId") Long handId,
+            @RequestBody HandLogHandCreateRequest request
+    ) {
+        var res = handLogService.updateHand(userId, eventId, blindLevelId, handId, request);
+        return ApiResponse.ok(res);
+    }
+
+    @DeleteMapping("/events/{eventId}/blind-levels/{blindLevelId}/hands/{handId}")
+    public ApiResponse<Void> deleteHand(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable(name = "eventId") Long eventId,
+            @PathVariable(name = "blindLevelId") Long blindLevelId,
+            @PathVariable(name = "handId") Long handId
+    ) {
+        handLogService.deleteHand(userId, eventId, blindLevelId, handId);
+        return ApiResponse.ok(null);
     }
 }

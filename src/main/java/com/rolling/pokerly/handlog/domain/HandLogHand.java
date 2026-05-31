@@ -88,6 +88,40 @@ public class HandLogHand {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    public void update(
+        String holeCards,
+        String firstRank,
+        String secondRank,
+        Boolean suited,
+        String position,
+        String actionType,
+        String actionLabel,
+        Boolean preflopAllIn,
+        String resultType,
+        String resultLabel,
+        Boolean reviewRequired,
+        String memo,
+        String handStrengthTier,
+        String handStrengthLabel,
+        String handStrengthColor
+    ) {
+        this.holeCards = holeCards;
+        this.firstRank = firstRank;
+        this.secondRank = secondRank;
+        this.suited = Boolean.TRUE.equals(suited);
+        this.position = position;
+        this.actionType = actionType;
+        this.actionLabel = actionLabel;
+        this.preflopAllIn = Boolean.TRUE.equals(preflopAllIn);
+        this.resultType = resultType == null ? "NOT_RECORDED" : resultType;
+        this.resultLabel = resultLabel;
+        this.reviewRequired = Boolean.TRUE.equals(reviewRequired);
+        this.memo = memo;
+        this.handStrengthTier = handStrengthTier;
+        this.handStrengthLabel = handStrengthLabel;
+        this.handStrengthColor = handStrengthColor;
+    }
+
     @PrePersist
     public void onCreate() {
         LocalDateTime now = LocalDateTime.now();

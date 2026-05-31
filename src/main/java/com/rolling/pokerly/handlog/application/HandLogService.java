@@ -173,6 +173,80 @@ public class HandLogService {
         return HandLogHandResponse.from(saved);
     }
 
+    @Transactional(readOnly = true)
+    public HandLogHandResponse getHandDetail(
+            Long userId,
+            Long eventId,
+            Long blindLevelId,
+            Long handId
+    ) {
+        getEventOrThrow(userId, eventId);
+        getBlindLevelOrThrow(userId, eventId, blindLevelId);
+
+        var hand = getHandOrThrow(userId, eventId, blindLevelId, handId);
+
+        return HandLogHandResponse.from(hand);
+    }
+
+    @Transactional
+    public HandLogHandResponse updateHand(
+            Long userId,
+            Long eventId,
+            Long blindLevelId,
+            Long handId,
+            HandLogHandCreateRequest req
+    ) {
+        getEventOrThrow(userId, eventId);
+        getBlindLevelOrThrow(userId, eventId, blindLevelId);
+
+        var hand = getHandOrThrow(userId, eventId, blindLevelId, handId);
+
+        var holeCards = resolveHoleCards(req);
+
+        if (holeCards == null || holeCards.trim().isEmpty()) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "INVALID_HOLE_CARDS",
+                    "핸드를 입력해 주세요."
+            );
+        }
+
+        hand.update(
+                holeCards.trim(),
+                req.firstRank(),
+                req.secondRank(),
+                req.suited(),
+                req.position(),
+                req.actionType(),
+                req.actionLabel(),
+                req.preflopAllIn(),
+                req.resultType(),
+                req.resultLabel(),
+                req.reviewRequired(),
+                req.memo(),
+                req.handStrengthTier(),
+                req.handStrengthLabel(),
+                req.handStrengthColor()
+        );
+
+        return HandLogHandResponse.from(hand);
+    }
+
+    @Transactional
+    public void deleteHand(
+            Long userId,
+            Long eventId,
+            Long blindLevelId,
+            Long handId
+    ) {
+        getEventOrThrow(userId, eventId);
+        getBlindLevelOrThrow(userId, eventId, blindLevelId);
+
+        var hand = getHandOrThrow(userId, eventId, blindLevelId, handId);
+
+        handRepository.delete(hand);
+    }
+
     private HandLogEvent getEventOrThrow(Long userId, Long eventId) {
         return eventRepository.findByIdAndUserId(eventId, userId)
                 .orElseThrow(() -> new ApiException(
@@ -188,6 +262,21 @@ public class HandLogService {
                         HttpStatus.NOT_FOUND,
                         "BLIND_LEVEL_NOT_FOUND",
                         "블라인드 구간을 찾을 수 없습니다."
+                ));
+    }
+
+    private HandLogHand getHandOrThrow(
+        Long userId,
+        Long eventId,
+        Long blindLevelId,
+        Long handId
+    ) {
+        return handRepository
+                .findByIdAndUserIdAndEventIdAndBlindLevelId(handId, userId, eventId, blindLevelId)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "HAND_NOT_FOUND",
+                        "핸드 기록을 찾을 수 없습니다."
                 ));
     }
 
