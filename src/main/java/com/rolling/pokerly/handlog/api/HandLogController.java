@@ -22,6 +22,7 @@ import com.rolling.pokerly.handlog.dto.HandLogHandCreateRequest;
 import com.rolling.pokerly.handlog.dto.HandLogHandResponse;
 
 import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/hand-log")
 @RequiredArgsConstructor
@@ -31,8 +32,7 @@ public class HandLogController {
 
     @GetMapping("/events")
     public ApiResponse<List<HandLogEventResponse>> getMyEvents(
-            @AuthenticationPrincipal(expression = "userId") Long userId
-    ) {
+            @AuthenticationPrincipal(expression = "userId") Long userId) {
         var res = handLogService.getMyEvents(userId);
         return ApiResponse.ok(res);
     }
@@ -40,8 +40,7 @@ public class HandLogController {
     @PostMapping("/events")
     public ApiResponse<HandLogEventResponse> createEvent(
             @AuthenticationPrincipal(expression = "userId") Long userId,
-            @RequestBody HandLogEventCreateRequest request
-    ) {
+            @RequestBody HandLogEventCreateRequest request) {
         var res = handLogService.createEvent(userId, request);
         return ApiResponse.ok(res);
     }
@@ -49,8 +48,7 @@ public class HandLogController {
     @GetMapping("/events/{eventId}")
     public ApiResponse<HandLogEventResponse> getEventDetail(
             @AuthenticationPrincipal(expression = "userId") Long userId,
-            @PathVariable(name = "eventId") Long eventId
-    ) {
+            @PathVariable(name = "eventId") Long eventId) {
         var res = handLogService.getEventDetail(userId, eventId);
         return ApiResponse.ok(res);
     }
@@ -59,8 +57,7 @@ public class HandLogController {
     public ApiResponse<HandLogBlindLevelResponse> createBlindLevel(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable(name = "eventId") Long eventId,
-            @RequestBody HandLogBlindLevelCreateRequest request
-    ) {
+            @RequestBody HandLogBlindLevelCreateRequest request) {
         var res = handLogService.createBlindLevel(userId, eventId, request);
         return ApiResponse.ok(res);
     }
@@ -69,10 +66,28 @@ public class HandLogController {
     public ApiResponse<HandLogBlindLevelResponse> getBlindLevelDetail(
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable(name = "eventId") Long eventId,
-            @PathVariable(name = "blindLevelId") Long blindLevelId
-    ) {
+            @PathVariable(name = "blindLevelId") Long blindLevelId) {
         var res = handLogService.getBlindLevelDetail(userId, eventId, blindLevelId);
         return ApiResponse.ok(res);
+    }
+
+    @PutMapping("/events/{eventId}/blind-levels/{blindLevelId}")
+    public ApiResponse<HandLogBlindLevelResponse> updateBlindLevel(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable(name = "eventId") Long eventId,
+            @PathVariable(name = "blindLevelId") Long blindLevelId,
+            @RequestBody HandLogBlindLevelCreateRequest request) {
+        var res = handLogService.updateBlindLevel(userId, eventId, blindLevelId, request);
+        return ApiResponse.ok(res);
+    }
+
+    @DeleteMapping("/events/{eventId}/blind-levels/{blindLevelId}")
+    public ApiResponse<Void> deleteBlindLevel(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable(name = "eventId") Long eventId,
+            @PathVariable(name = "blindLevelId") Long blindLevelId) {
+        handLogService.deleteBlindLevel(userId, eventId, blindLevelId);
+        return ApiResponse.ok(null);
     }
 
     @PostMapping("/events/{eventId}/blind-levels/{blindLevelId}/hands")
@@ -80,8 +95,7 @@ public class HandLogController {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable(name = "eventId") Long eventId,
             @PathVariable(name = "blindLevelId") Long blindLevelId,
-            @RequestBody HandLogHandCreateRequest request
-    ) {
+            @RequestBody HandLogHandCreateRequest request) {
         var res = handLogService.createHand(userId, eventId, blindLevelId, request);
         return ApiResponse.ok(res);
     }
@@ -91,8 +105,7 @@ public class HandLogController {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable(name = "eventId") Long eventId,
             @PathVariable(name = "blindLevelId") Long blindLevelId,
-            @PathVariable(name = "handId") Long handId
-    ) {
+            @PathVariable(name = "handId") Long handId) {
         var res = handLogService.getHandDetail(userId, eventId, blindLevelId, handId);
         return ApiResponse.ok(res);
     }
@@ -103,8 +116,7 @@ public class HandLogController {
             @PathVariable(name = "eventId") Long eventId,
             @PathVariable(name = "blindLevelId") Long blindLevelId,
             @PathVariable(name = "handId") Long handId,
-            @RequestBody HandLogHandCreateRequest request
-    ) {
+            @RequestBody HandLogHandCreateRequest request) {
         var res = handLogService.updateHand(userId, eventId, blindLevelId, handId, request);
         return ApiResponse.ok(res);
     }
@@ -114,8 +126,7 @@ public class HandLogController {
             @AuthenticationPrincipal(expression = "userId") Long userId,
             @PathVariable(name = "eventId") Long eventId,
             @PathVariable(name = "blindLevelId") Long blindLevelId,
-            @PathVariable(name = "handId") Long handId
-    ) {
+            @PathVariable(name = "handId") Long handId) {
         handLogService.deleteHand(userId, eventId, blindLevelId, handId);
         return ApiResponse.ok(null);
     }

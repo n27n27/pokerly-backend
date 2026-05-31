@@ -11,18 +11,20 @@ public interface HandLogHandRepository extends JpaRepository<HandLogHand, Long> 
 
     List<HandLogHand> findAllByUserIdAndEventIdOrderByCreatedAtAsc(
             Long userId,
-            Long eventId
-    );
+            Long eventId);
 
     List<HandLogHand> findAllByUserIdAndBlindLevelIdOrderByCreatedAtAsc(
             Long userId,
-            Long blindLevelId
-    );
+            Long blindLevelId);
 
     Optional<HandLogHand> findByIdAndUserIdAndEventIdAndBlindLevelId(
             Long id,
             Long userId,
             Long eventId,
-            Long blindLevelId
-    );
+            Long blindLevelId);
+
+    boolean existsByUserIdAndEventIdAndBlindLevelId(
+            Long userId,
+            Long eventId,
+            Long blindLevelId);
 }

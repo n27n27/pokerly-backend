@@ -35,14 +35,14 @@ public class HandLogService {
 
     @Transactional(readOnly = true)
     public List<HandLogEventResponse> getMyEvents(Long userId) {
-    return eventRepository.findAllByUserIdOrderByEventAtDescCreatedAtDesc(userId)
-            .stream()
-            .map(event -> {
+        return eventRepository.findAllByUserIdOrderByEventAtDescCreatedAtDesc(userId)
+                .stream()
+                .map(event -> {
                     var levels = getLevelResponses(userId, event.getId());
                     return HandLogEventResponse.from(event, levels);
-            })
-            .toList();
-}
+                })
+                .toList();
+    }
 
     @Transactional
     public HandLogEventResponse createEvent(Long userId, HandLogEventCreateRequest req) {
@@ -50,8 +50,7 @@ public class HandLogService {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
                     "INVALID_EVENT_NAME",
-                    "대회명을 입력해 주세요."
-            );
+                    "대회명을 입력해 주세요.");
         }
 
         var event = HandLogEvent.builder()
@@ -77,16 +76,14 @@ public class HandLogService {
     public HandLogBlindLevelResponse createBlindLevel(
             Long userId,
             Long eventId,
-            HandLogBlindLevelCreateRequest req
-    ) {
+            HandLogBlindLevelCreateRequest req) {
         getEventOrThrow(userId, eventId);
 
         if (req.levelNo() == null) {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
                     "INVALID_LEVEL_NO",
-                    "레벨을 입력해 주세요."
-            );
+                    "레벨을 입력해 주세요.");
         }
 
         var level = HandLogBlindLevel.builder()
@@ -106,8 +103,7 @@ public class HandLogService {
     public HandLogBlindLevelResponse getBlindLevelDetail(
             Long userId,
             Long eventId,
-            Long blindLevelId
-    ) {
+            Long blindLevelId) {
         getEventOrThrow(userId, eventId);
 
         var level = getBlindLevelOrThrow(userId, eventId, blindLevelId);
@@ -122,12 +118,67 @@ public class HandLogService {
     }
 
     @Transactional
+    public HandLogBlindLevelResponse updateBlindLevel(
+            Long userId,
+            Long eventId,
+            Long blindLevelId,
+            HandLogBlindLevelCreateRequest req) {
+        getEventOrThrow(userId, eventId);
+
+        var level = getBlindLevelOrThrow(userId, eventId, blindLevelId);
+
+        if (req.levelNo() == null) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "INVALID_LEVEL_NO",
+                    "레벨을 입력해 주세요.");
+        }
+
+        level.update(
+                req.levelNo(),
+                defaultNumber(req.smallBlind()),
+                defaultNumber(req.bigBlind()),
+                defaultNumber(req.ante()));
+
+        var hands = handRepository
+                .findAllByUserIdAndBlindLevelIdOrderByCreatedAtAsc(userId, blindLevelId)
+                .stream()
+                .map(HandLogHandResponse::from)
+                .toList();
+
+        return HandLogBlindLevelResponse.from(level, hands);
+    }
+
+    @Transactional
+    public void deleteBlindLevel(
+            Long userId,
+            Long eventId,
+            Long blindLevelId) {
+        getEventOrThrow(userId, eventId);
+
+        var level = getBlindLevelOrThrow(userId, eventId, blindLevelId);
+
+        boolean hasHands = handRepository.existsByUserIdAndEventIdAndBlindLevelId(
+                userId,
+                eventId,
+                blindLevelId);
+
+        if (hasHands) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "BLIND_LEVEL_HAS_HANDS",
+                    "이 블라인드 구간에 기록된 핸드가 있어 삭제할 수 없습니다.");
+        }
+
+        blindLevelRepository.delete(level);
+    }
+
+    @Transactional
     public HandLogHandResponse createHand(
             Long userId,
             Long eventId,
             Long blindLevelId,
-            HandLogHandCreateRequest req
-    ) {
+            HandLogHandCreateRequest req) {
         getEventOrThrow(userId, eventId);
         getBlindLevelOrThrow(userId, eventId, blindLevelId);
 
@@ -137,8 +188,7 @@ public class HandLogService {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
                     "INVALID_HOLE_CARDS",
-                    "핸드를 입력해 주세요."
-            );
+                    "핸드를 입력해 주세요.");
         }
 
         var hand = HandLogHand.builder()
@@ -178,8 +228,7 @@ public class HandLogService {
             Long userId,
             Long eventId,
             Long blindLevelId,
-            Long handId
-    ) {
+            Long handId) {
         getEventOrThrow(userId, eventId);
         getBlindLevelOrThrow(userId, eventId, blindLevelId);
 
@@ -194,8 +243,7 @@ public class HandLogService {
             Long eventId,
             Long blindLevelId,
             Long handId,
-            HandLogHandCreateRequest req
-    ) {
+            HandLogHandCreateRequest req) {
         getEventOrThrow(userId, eventId);
         getBlindLevelOrThrow(userId, eventId, blindLevelId);
 
@@ -207,8 +255,7 @@ public class HandLogService {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
                     "INVALID_HOLE_CARDS",
-                    "핸드를 입력해 주세요."
-            );
+                    "핸드를 입력해 주세요.");
         }
 
         hand.update(
@@ -226,8 +273,7 @@ public class HandLogService {
                 req.memo(),
                 req.handStrengthTier(),
                 req.handStrengthLabel(),
-                req.handStrengthColor()
-        );
+                req.handStrengthColor());
 
         return HandLogHandResponse.from(hand);
     }
@@ -237,8 +283,7 @@ public class HandLogService {
             Long userId,
             Long eventId,
             Long blindLevelId,
-            Long handId
-    ) {
+            Long handId) {
         getEventOrThrow(userId, eventId);
         getBlindLevelOrThrow(userId, eventId, blindLevelId);
 
@@ -252,8 +297,7 @@ public class HandLogService {
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,
                         "EVENT_NOT_FOUND",
-                        "대회를 찾을 수 없습니다."
-                ));
+                        "대회를 찾을 수 없습니다."));
     }
 
     private HandLogBlindLevel getBlindLevelOrThrow(Long userId, Long eventId, Long blindLevelId) {
@@ -261,23 +305,20 @@ public class HandLogService {
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,
                         "BLIND_LEVEL_NOT_FOUND",
-                        "블라인드 구간을 찾을 수 없습니다."
-                ));
+                        "블라인드 구간을 찾을 수 없습니다."));
     }
 
     private HandLogHand getHandOrThrow(
-        Long userId,
-        Long eventId,
-        Long blindLevelId,
-        Long handId
-    ) {
+            Long userId,
+            Long eventId,
+            Long blindLevelId,
+            Long handId) {
         return handRepository
                 .findByIdAndUserIdAndEventIdAndBlindLevelId(handId, userId, eventId, blindLevelId)
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,
                         "HAND_NOT_FOUND",
-                        "핸드 기록을 찾을 수 없습니다."
-                ));
+                        "핸드 기록을 찾을 수 없습니다."));
     }
 
     private List<HandLogBlindLevelResponse> getLevelResponses(Long userId, Long eventId) {
@@ -289,14 +330,12 @@ public class HandLogService {
         Map<Long, List<HandLogHandResponse>> handsByLevelId = hands.stream()
                 .collect(Collectors.groupingBy(
                         HandLogHand::getBlindLevelId,
-                        Collectors.mapping(HandLogHandResponse::from, Collectors.toList())
-                ));
+                        Collectors.mapping(HandLogHandResponse::from, Collectors.toList())));
 
         return levels.stream()
                 .map(level -> HandLogBlindLevelResponse.from(
                         level,
-                        handsByLevelId.getOrDefault(level.getId(), List.of())
-                ))
+                        handsByLevelId.getOrDefault(level.getId(), List.of())))
                 .toList();
     }
 

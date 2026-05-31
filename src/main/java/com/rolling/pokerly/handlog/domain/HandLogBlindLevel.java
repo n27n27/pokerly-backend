@@ -52,6 +52,17 @@ public class HandLogBlindLevel {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    public void update(
+            Integer levelNo,
+            Integer smallBlind,
+            Integer bigBlind,
+            Integer ante) {
+        this.levelNo = levelNo;
+        this.smallBlind = smallBlind;
+        this.bigBlind = bigBlind;
+        this.ante = ante;
+    }
+
     @PrePersist
     public void onCreate() {
         LocalDateTime now = LocalDateTime.now();
