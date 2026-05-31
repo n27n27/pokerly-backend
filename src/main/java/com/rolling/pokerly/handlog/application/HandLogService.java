@@ -13,11 +13,13 @@ import com.rolling.pokerly.core.exception.ApiException;
 import com.rolling.pokerly.handlog.domain.HandLogBlindLevel;
 import com.rolling.pokerly.handlog.domain.HandLogEvent;
 import com.rolling.pokerly.handlog.domain.HandLogHand;
+import com.rolling.pokerly.handlog.dto.HandLogBlindLevelCopyRequest;
 import com.rolling.pokerly.handlog.dto.HandLogBlindLevelCreateRequest;
 import com.rolling.pokerly.handlog.dto.HandLogBlindLevelResponse;
 import com.rolling.pokerly.handlog.dto.HandLogEventCreateRequest;
 import com.rolling.pokerly.handlog.dto.HandLogEventResponse;
 import com.rolling.pokerly.handlog.dto.HandLogHandCreateRequest;
+import com.rolling.pokerly.handlog.dto.HandLogHandMoveRequest;
 import com.rolling.pokerly.handlog.dto.HandLogHandResponse;
 import com.rolling.pokerly.handlog.repo.HandLogBlindLevelRepository;
 import com.rolling.pokerly.handlog.repo.HandLogEventRepository;
@@ -97,6 +99,65 @@ public class HandLogService {
 
         var saved = blindLevelRepository.save(level);
         return HandLogBlindLevelResponse.from(saved, List.of());
+    }
+
+    @Transactional
+    public HandLogEventResponse copyBlindLevelsFromEvent(
+            Long userId,
+            Long targetEventId,
+            HandLogBlindLevelCopyRequest req) {
+        if (req.sourceEventId() == null) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "INVALID_SOURCE_EVENT",
+                    "불러올 대회를 선택해 주세요.");
+        }
+
+        if (targetEventId.equals(req.sourceEventId())) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "SAME_EVENT_NOT_ALLOWED",
+                    "같은 대회의 블라인드 구조는 불러올 수 없습니다.");
+        }
+
+        var targetEvent = getEventOrThrow(userId, targetEventId);
+        getEventOrThrow(userId, req.sourceEventId());
+
+        var targetLevels = blindLevelRepository
+                .findAllByUserIdAndEventIdOrderByLevelNoAscCreatedAtAsc(userId, targetEventId);
+
+        if (!targetLevels.isEmpty()) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "TARGET_EVENT_ALREADY_HAS_LEVELS",
+                    "이미 등록된 블라인드 구간이 있어 불러올 수 없습니다.");
+        }
+
+        var sourceLevels = blindLevelRepository
+                .findAllByUserIdAndEventIdOrderByLevelNoAscCreatedAtAsc(userId, req.sourceEventId());
+
+        if (sourceLevels.isEmpty()) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "SOURCE_EVENT_HAS_NO_LEVELS",
+                    "선택한 대회에 불러올 블라인드 구간이 없습니다.");
+        }
+
+        var copiedLevels = sourceLevels.stream()
+                .map(source -> HandLogBlindLevel.builder()
+                        .userId(userId)
+                        .eventId(targetEventId)
+                        .levelNo(source.getLevelNo())
+                        .smallBlind(source.getSmallBlind())
+                        .bigBlind(source.getBigBlind())
+                        .ante(source.getAnte())
+                        .build())
+                .toList();
+
+        blindLevelRepository.saveAll(copiedLevels);
+
+        var levels = getLevelResponses(userId, targetEventId);
+        return HandLogEventResponse.from(targetEvent, levels);
     }
 
     @Transactional(readOnly = true)
@@ -274,6 +335,35 @@ public class HandLogService {
                 req.handStrengthTier(),
                 req.handStrengthLabel(),
                 req.handStrengthColor());
+
+        return HandLogHandResponse.from(hand);
+    }
+
+    @Transactional
+    public HandLogHandResponse moveHand(
+            Long userId,
+            Long eventId,
+            Long blindLevelId,
+            Long handId,
+            HandLogHandMoveRequest req) {
+        if (req.targetBlindLevelId() == null) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "INVALID_TARGET_BLIND_LEVEL",
+                    "이동할 블라인드 구간을 선택해 주세요.");
+        }
+
+        getEventOrThrow(userId, eventId);
+        getBlindLevelOrThrow(userId, eventId, blindLevelId);
+
+        var targetLevel = getBlindLevelOrThrow(userId, eventId, req.targetBlindLevelId());
+        var hand = getHandOrThrow(userId, eventId, blindLevelId, handId);
+
+        if (blindLevelId.equals(targetLevel.getId())) {
+            return HandLogHandResponse.from(hand);
+        }
+
+        hand.moveToBlindLevel(targetLevel.getId());
 
         return HandLogHandResponse.from(hand);
     }

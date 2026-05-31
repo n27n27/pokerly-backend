@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -14,11 +15,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.rolling.pokerly.core.response.ApiResponse;
 import com.rolling.pokerly.handlog.application.HandLogService;
+import com.rolling.pokerly.handlog.dto.HandLogBlindLevelCopyRequest;
 import com.rolling.pokerly.handlog.dto.HandLogBlindLevelCreateRequest;
 import com.rolling.pokerly.handlog.dto.HandLogBlindLevelResponse;
 import com.rolling.pokerly.handlog.dto.HandLogEventCreateRequest;
 import com.rolling.pokerly.handlog.dto.HandLogEventResponse;
 import com.rolling.pokerly.handlog.dto.HandLogHandCreateRequest;
+import com.rolling.pokerly.handlog.dto.HandLogHandMoveRequest;
 import com.rolling.pokerly.handlog.dto.HandLogHandResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -59,6 +62,15 @@ public class HandLogController {
             @PathVariable(name = "eventId") Long eventId,
             @RequestBody HandLogBlindLevelCreateRequest request) {
         var res = handLogService.createBlindLevel(userId, eventId, request);
+        return ApiResponse.ok(res);
+    }
+
+    @PostMapping("/events/{eventId}/blind-levels/copy-from-event")
+    public ApiResponse<HandLogEventResponse> copyBlindLevelsFromEvent(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable(name = "eventId") Long eventId,
+            @RequestBody HandLogBlindLevelCopyRequest request) {
+        var res = handLogService.copyBlindLevelsFromEvent(userId, eventId, request);
         return ApiResponse.ok(res);
     }
 
@@ -118,6 +130,17 @@ public class HandLogController {
             @PathVariable(name = "handId") Long handId,
             @RequestBody HandLogHandCreateRequest request) {
         var res = handLogService.updateHand(userId, eventId, blindLevelId, handId, request);
+        return ApiResponse.ok(res);
+    }
+
+    @PatchMapping("/events/{eventId}/blind-levels/{blindLevelId}/hands/{handId}/move")
+    public ApiResponse<HandLogHandResponse> moveHand(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable(name = "eventId") Long eventId,
+            @PathVariable(name = "blindLevelId") Long blindLevelId,
+            @PathVariable(name = "handId") Long handId,
+            @RequestBody HandLogHandMoveRequest request) {
+        var res = handLogService.moveHand(userId, eventId, blindLevelId, handId, request);
         return ApiResponse.ok(res);
     }
 

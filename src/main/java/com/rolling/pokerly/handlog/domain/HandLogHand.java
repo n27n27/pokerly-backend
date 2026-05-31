@@ -89,22 +89,21 @@ public class HandLogHand {
     private LocalDateTime updatedAt;
 
     public void update(
-        String holeCards,
-        String firstRank,
-        String secondRank,
-        Boolean suited,
-        String position,
-        String actionType,
-        String actionLabel,
-        Boolean preflopAllIn,
-        String resultType,
-        String resultLabel,
-        Boolean reviewRequired,
-        String memo,
-        String handStrengthTier,
-        String handStrengthLabel,
-        String handStrengthColor
-    ) {
+            String holeCards,
+            String firstRank,
+            String secondRank,
+            Boolean suited,
+            String position,
+            String actionType,
+            String actionLabel,
+            Boolean preflopAllIn,
+            String resultType,
+            String resultLabel,
+            Boolean reviewRequired,
+            String memo,
+            String handStrengthTier,
+            String handStrengthLabel,
+            String handStrengthColor) {
         this.holeCards = holeCards;
         this.firstRank = firstRank;
         this.secondRank = secondRank;
@@ -120,6 +119,10 @@ public class HandLogHand {
         this.handStrengthTier = handStrengthTier;
         this.handStrengthLabel = handStrengthLabel;
         this.handStrengthColor = handStrengthColor;
+    }
+
+    public void moveToBlindLevel(Long targetBlindLevelId) {
+        this.blindLevelId = targetBlindLevelId;
     }
 
     @PrePersist

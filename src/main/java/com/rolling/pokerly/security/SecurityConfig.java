@@ -44,20 +44,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ CORS 활성화
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .exceptionHandling(ex -> ex
-                .authenticationEntryPoint(authenticationEntryPoint)
-                .accessDeniedHandler(accessDeniedHandler)
-            )
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
-                .requestMatchers("/api/auth/login", "/api/auth/refresh", "/auth/login", "/auth/refresh", "/api/auth/logout", "/auth/logout").permitAll()
-                .requestMatchers("/api/users/register", "/users/register").permitAll()
-                .requestMatchers("/api/test/public").permitAll()
-                .anyRequest().authenticated()
-            );
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ CORS 활성화
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/refresh", "/auth/login", "/auth/refresh",
+                                "/api/auth/logout", "/auth/logout")
+                        .permitAll()
+                        .requestMatchers("/api/users/register", "/users/register").permitAll()
+                        .requestMatchers("/api/test/public").permitAll()
+                        .anyRequest().authenticated());
 
         http.addFilterBefore(new JwtAuthFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class);
         return http.build();
@@ -66,8 +66,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("http://localhost:9000", "https://pokerly.kr", "http://pokerly.kr")); // Quasar dev 서버 주소
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedOriginPatterns(List.of("http://localhost:9000", "https://pokerly.kr", "http://pokerly.kr")); // Quasar
+                                                                                                                      // dev
+                                                                                                                      // 서버
+                                                                                                                      // 주소
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
