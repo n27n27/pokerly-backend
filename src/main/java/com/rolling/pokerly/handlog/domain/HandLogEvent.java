@@ -46,6 +46,10 @@ public class HandLogEvent {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    public void updateName(String name) {
+        this.name = name;
+    }
+
     @PrePersist
     public void onCreate() {
         var now = LocalDateTime.now();

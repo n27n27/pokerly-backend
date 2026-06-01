@@ -75,6 +75,46 @@ public class HandLogService {
     }
 
     @Transactional
+    public HandLogEventResponse updateEvent(
+            Long userId,
+            Long eventId,
+            HandLogEventCreateRequest req) {
+        var event = getEventOrThrow(userId, eventId);
+
+        if (req.name() == null || req.name().trim().isEmpty()) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "INVALID_EVENT_NAME",
+                    "대회명을 입력해 주세요.");
+        }
+
+        event.updateName(req.name().trim());
+
+        var levels = getLevelResponses(userId, eventId);
+        return HandLogEventResponse.from(event, levels);
+    }
+
+    @Transactional
+    public void deleteEvent(Long userId, Long eventId) {
+        var event = getEventOrThrow(userId, eventId);
+
+        boolean hasHands = handRepository.existsByUserIdAndEventId(userId, eventId);
+
+        if (hasHands) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "EVENT_HAS_HANDS",
+                    "기록된 핸드가 있는 대회는 삭제할 수 없습니다.");
+        }
+
+        var levels = blindLevelRepository
+                .findAllByUserIdAndEventIdOrderByLevelNoAscCreatedAtAsc(userId, eventId);
+
+        blindLevelRepository.deleteAll(levels);
+        eventRepository.delete(event);
+    }
+
+    @Transactional
     public HandLogBlindLevelResponse createBlindLevel(
             Long userId,
             Long eventId,

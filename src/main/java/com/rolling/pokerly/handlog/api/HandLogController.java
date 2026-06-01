@@ -56,6 +56,23 @@ public class HandLogController {
         return ApiResponse.ok(res);
     }
 
+    @PutMapping("/events/{eventId}")
+    public ApiResponse<HandLogEventResponse> updateEvent(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable(name = "eventId") Long eventId,
+            @RequestBody HandLogEventCreateRequest request) {
+        var res = handLogService.updateEvent(userId, eventId, request);
+        return ApiResponse.ok(res);
+    }
+
+    @DeleteMapping("/events/{eventId}")
+    public ApiResponse<Void> deleteEvent(
+            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @PathVariable(name = "eventId") Long eventId) {
+        handLogService.deleteEvent(userId, eventId);
+        return ApiResponse.ok(null);
+    }
+
     @PostMapping("/events/{eventId}/blind-levels")
     public ApiResponse<HandLogBlindLevelResponse> createBlindLevel(
             @AuthenticationPrincipal(expression = "userId") Long userId,

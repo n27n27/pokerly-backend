@@ -27,4 +27,6 @@ public interface HandLogHandRepository extends JpaRepository<HandLogHand, Long> 
             Long userId,
             Long eventId,
             Long blindLevelId);
+
+    boolean existsByUserIdAndEventId(Long userId, Long eventId);
 }
